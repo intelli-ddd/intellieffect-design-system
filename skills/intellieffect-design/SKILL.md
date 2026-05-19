@@ -13,22 +13,100 @@ description: >
   Override DSP 가능 — 사용자가 명시적으로 "Linear 톤", "Aesop 톤", "한국 매거진 톤" 같은 키워드 박으면 그 톤이 매칭되는 DSP 우선. 매칭되는 DSP가 없으면 가장 가까운 reference + `_template.md` 기반 inline DSP 즉석 생성.
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   author: IntelliEffect
   upstream: frontend-design@claude-plugins-official (recommended dependency)
 ---
 
 # IntelliEffect Design System
 
-**이 skill은 IntelliEffect 팀의 UI 디자인 작업에 자동 적용된다.** 사용자가 UI/디자인 관련 요청을 하면 이 skill이 활성화되어, 12개 DSP 카탈로그에서 도메인 매칭 후 verbatim 적용한다.
+**이 skill은 IntelliEffect 팀의 UI 디자인 작업에 자동 적용된다.** 사용자가 UI/디자인 관련 요청을 하면 이 skill이 활성화되어, 20개 DSP 카탈로그에서 도메인 매칭 후 verbatim 적용한다.
 
 ## 핵심 룰 (모든 UI 작업에 강제)
 
 1. **DSP verbatim 적용** — 매칭된 DSP의 color hex, radius, shadow token, typography family를 한 글자도 변경 금지
 2. **AI-generic 패턴 명시 배제** — 각 DSP의 "Banned patterns" 섹션을 코드에 적용 전 grep으로 검증
-3. **Single accent commit** — DSP가 multi-color 정의 안 한 이상 페이지당 1개 accent
+3. **Single accent commit** — DSP가 multi-color 정의 안 한 이상 페이지당 1개 accent, ratio ≤ 10%
 4. **Single-shot 금지** — 코드 생성 후 screenshot iteration 최소 2 라운드 (renderable component에 한해)
 5. **frontend-design plugin 활용** — 설치되어 있으면 base aesthetic guardrail로 활용. 없어도 본 skill 자체가 충분한 design context 제공.
+
+## Award-grade signal — 글로벌 banned 패턴 (모든 DSP 위에 강제, v1.2.0 추가)
+
+**문제**: DSP가 positive spec만 있으면 LLM은 학습 corpus의 **median** (Stripe/Linear/Vercel을 섞은 SaaS template) 을 출력. AI-template median이 모든 도메인에서 동일하게 나타남. 다음은 어떤 DSP를 활성화해도 항상 적용되는 negative constraint:
+
+### A. Banned typography (어느 DSP든 위반 시 failure)
+
+- **Inter weight 700 또는 800**을 헤드라인에 사용 — 가장 강한 AI-template 시그널. 사용 가능 weight: 400, 500, 510 (Linear-style 비-표준), 590, 600 만.
+- **단일 family (Inter만, Geist만)** 헤드라인+본문 동시 사용 — 항상 display + body + (optional) mono 3-family pair 강제.
+- **`letter-spacing: normal`** 을 48px+ display headline에 사용 — 모든 headline에 progressive negative tracking 강제:
+  - 48px → `-0.05em` (-2.4px)
+  - 32px → `-0.04em` (-1.28px)
+  - 24px → `-0.04em` (-0.96px)
+  - 16px → `-0.02em` (-0.32px)
+  - 14px 이하 → `normal`
+- **OpenType features 미활성화** — body에 `font-feature-settings: "tnum", "ss01"` 또는 `font-variant-numeric: tabular-nums slashed-zero` 글로벌 강제. 누락 시 모든 숫자가 proportional digit으로 jitter → AI-template 시그널.
+- **`font-weight: bold`** (700) for emphasis — 대신 `font-weight: 510` 또는 `font-weight: 600` + tracking 조정으로 hierarchy 만들 것.
+- **Title Case Headlines** — sentence-case 강제 ("Banking — redesigned from the ground up" 같은 형태. "The Best Platform For Modern Teams" 같은 Title Case 금지).
+
+### B. Banned color (어느 DSP든 위반 시 failure)
+
+- **Tailwind 기본 indigo-500 (`#6366f1`)**, **purple-blue gradient** (purple → blue → pink), **violet-* / sky-* / emerald-* tailwind defaults** — 모두 LLM이 가장 자주 reach하는 색.
+- **Pure `#000000` / `#ffffff`** — 항상 near-black (`oklch(0.10 0.004 250)` 또는 `#0A0A0A~#171717`) + near-white (`oklch(0.97 0.004 80)` 또는 `#FAFAFA`).
+- **다중 saturated accent** (rainbow palette) — single accent 페이지 ratio ≤ 10% 강제.
+- **Gradient text** on headline/metric — 절대 금지.
+
+### C. Banned layout (어느 DSP든 위반 시 failure)
+
+- **Split 7:5 hero with text-left + product-mock-right** — 가장 흔한 AI-template hero. 대안: asymmetric single-column left-aligned, 60/40 primary+secondary, full-bleed cinematic, magazine spread.
+- **3-up uniform feature grid** (icon + title + 2-line desc × 3) — AI-template 시그니처. 대안: asymmetric bento (1 dominant cell 2+ col + smaller cells with varied media — chart/illustration/metric/testimonial), single column with editorial flow, 또는 numbered article.
+- **3-tier identical pricing card** — AI 시그니처. 대안: tier별 visual differentiation (Standard small / Scale large 강조 / Enterprise text-only), variable cell width, 또는 single-column comparison table.
+- **Centered hero with stacked CTA pair** — AI default. 대안: asymmetric headline + side meta + single Primary CTA only.
+- **`backdrop-filter: blur` on content cards** (glassmorphism) — 거의 항상 AI-template 시그널.
+
+### D. Banned shadow / radius / micro-detail
+
+- **`shadow-lg` / `shadow-xl` single drop** — 대신 3-layer shadow stack: `0 0 0 1px rgba(0,0,0,0.08)` (hairline ring) + `0 2px 2px rgba(0,0,0,0.04)` (soft drop) + `inset 0 0 0 1px #fafafa` (inner highlight). Hobday 2× rule 유지.
+- **`rounded-2xl` (16px) 이상** on buttons/cards — 6-8px buttons, 8-12px cards 강제. Marketing CTA만 `100px pill` 허용 (예외).
+- **Generic Lucide/Heroicons** without customization — DSP가 monoline stroke 1.5px 명시했으면 그것만. 컬러 아이콘·3D 아이콘·gradient stroke 절대 금지.
+
+### E. Banned copy voice
+
+- **"Move money, ship faster" / "The all-in-one platform for X" / "Built for modern teams" / "Powerful, simple, secure"** 같은 generic SaaS cliché — 절대 금지.
+- 대안 copy patterns:
+  - Brand-specific noun-metaphor + em-dash (예: Mercury "Banking — redesigned from the ground up")
+  - Triple-imperative declarative (예: Vercel "Develop. Preview. Ship.")
+  - Single-concept dramatic noun phrase (예: Stripe "Payments infrastructure for the internet")
+
+### F. Banned motion
+
+- **Fade-in only on scroll** (generic Framer Motion default) — 대안: weight-axis variable font transition on hover (400→510), scroll-driven typography reveal with `clip-path` mask, View Transitions API for route changes.
+- **Bouncy spring / overshoot / elastic easing** — 항상 ease-out cubic-bezier 또는 narrow spring (damping 22-26, stiffness 280-320).
+- **Parallax scroll-hijacking** — 절대 금지.
+
+### G. Visual hook mandate (모든 marketing page 필수)
+
+페이지에 다음 중 **정확히 하나만** 선택해서 적용:
+
+1. **Gradient mesh art** (Stripe-style cream/orange/lavender 혼합) — 단 hue palette는 DSP가 명시한 brand color 안에서만
+2. **Cinematic photography** (Mercury-style, single subject + dramatic lighting + atmospheric)
+3. **3D card/product render** (Brex-style, Spline/R3F)
+4. **Branded illustration system** (Ramp-style bento graphic system)
+5. **Graphic tapestry** (Wise-style texture + color + imagery 합성)
+
+**2개 이상 mix는 AI-template 시그널 → failure.** Visual hook 0개 (pure typography only) 은 editorial DSP (editorial-magazine, museum-cultural) 에서만 허용.
+
+### H. Required craft signal (모든 DSP에 자동 부착)
+
+- **Tabular-nums** on all numeric displays (counts, amounts, timers, dates, ratios, percentages)
+- **Single accent strict ratio** — page surface 5-10%만 차지. 나머지는 ink + canvas + neutral grays
+- **Sentence-case headlines** (Title Case 금지)
+- **Mono eyebrow + sans headline pairing** — eyebrow는 11-12px monospace uppercase tracking 0.05em, 위에 placed
+- **Asymmetric layout** — 모든 hero/section은 의도적 visual weight imbalance
+- **Keyboard shortcut display in monospace badge** (`⌘ K`, `⌘ K to search`) — command-driven action에 강제
+
+## 70% Negative + 30% Positive 원칙
+
+DSP/SKILL 본문의 약 **70%가 banned 패턴 명시** (negative constraint) 이어야 LLM이 학습 median에서 벗어남. 30%만 positive spec. 사용자가 "AI 느낌 난다"고 평가하면 banned list가 부족한 것 — 더 구체적 negative constraint 추가.
 
 ## DSP 카탈로그
 
