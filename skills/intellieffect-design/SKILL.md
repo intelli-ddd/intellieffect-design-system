@@ -3,17 +3,17 @@ name: intellieffect-design
 description: >
   AUTO-TRIGGER on any UI/UX design request — React/Next.js component, hero section, landing page, marketing site, pricing page, dashboard, mobile app screen, Tailwind theme/@theme block, Motion/GSAP animation, shadcn install/customization, or any task that ends with a renderable interface.
 
-  IntelliEffect 팀 design system wrapper. 사용자 요청 도메인을 12 DSP (Design System Prompt) 카탈로그에서 매칭한 뒤, **그 DSP를 verbatim 적용**하여 코드 생성. AI-generic UI defaults 회피 + 회사 일관 톤 확보.
+  IntelliEffect 팀 design system wrapper. 사용자 요청 도메인을 20 DSP (Design System Prompt) 카탈로그에서 매칭한 뒤, **그 DSP를 verbatim 적용**하여 코드 생성. AI-generic UI defaults 회피 + 회사 일관 톤 확보. 지디웹 한국 시장 reference 통합.
 
-  Web DSP (7): wellness-platform, fintech-saas, corporate-b2b, ecommerce-luxury, editorial-magazine, education-edtech, real-estate-kr.
-  Mobile DSP (5): fitness-app, wellness-app, fintech-app, content-streaming, productivity-app.
+  Web DSP (12): wellness-platform, fintech-saas, corporate-b2b, ecommerce-luxury, editorial-magazine, education-edtech, real-estate-kr, kbeauty-cosmetics, kpop-entertainment, medical-clinic, museum-cultural, automotive-mobility.
+  Mobile DSP (8): fitness-app, wellness-app, fintech-app, content-streaming, productivity-app, insurance-mobile, ecommerce-mobile-kr, fnb-membership.
 
-  Activation flow: (1) 사용자 요청에서 도메인 키워드 추출 (예: "pricing page" + "Linear 톤" → fintech-saas 또는 corporate-b2b), (2) 매칭 DSP 파일 경로 명시 (`@plugin's prompts/design/<web|mobile>/<slug>.md`), (3) Claude Code 환경이면 designer agent 위임 (Task tool `subagent_type: "designer"`) — 그 외 환경이면 DSP inline verbatim 적용 + iteration loop 직접 실행.
+  Activation flow: (1) 사용자 요청에서 도메인 키워드 추출 (예: "pricing page" + "Linear 톤" → fintech-saas 또는 corporate-b2b / "한국 분양 사이트" → real-estate-kr / "K-beauty 브랜드 사이트" → kbeauty-cosmetics / "보험 가입 모바일" → insurance-mobile), (2) 매칭 DSP 파일 경로 명시 (`@plugin's prompts/design/<web|mobile>/<slug>.md`), (3) Claude Code 환경이면 designer agent 위임 (Task tool `subagent_type: "designer"`) — 그 외 환경이면 DSP inline verbatim 적용 + iteration loop 직접 실행.
 
   Override DSP 가능 — 사용자가 명시적으로 "Linear 톤", "Aesop 톤", "한국 매거진 톤" 같은 키워드 박으면 그 톤이 매칭되는 DSP 우선. 매칭되는 DSP가 없으면 가장 가까운 reference + `_template.md` 기반 inline DSP 즉석 생성.
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   author: IntelliEffect
   upstream: frontend-design@claude-plugins-official (recommended dependency)
 ---
@@ -32,7 +32,7 @@ metadata:
 
 ## DSP 카탈로그
 
-### Web (7)
+### Web (12)
 
 | Slug | Domain | Reference 톤 | Path |
 |---|---|---|---|
@@ -40,11 +40,16 @@ metadata:
 | `fintech-saas` | B2B Financial SaaS | Stripe/Mercury/Brex 정밀 monochrome | `prompts/design/web/fintech-saas.md` |
 | `corporate-b2b` | Enterprise / Consulting / AI services | Vercel/Anthropic editorial 절제 | `prompts/design/web/corporate-b2b.md` |
 | `ecommerce-luxury` | Premium / Niche e-commerce | Aesop/MR PORTER atelier 톤 | `prompts/design/web/ecommerce-luxury.md` |
-| `editorial-magazine` | 디지털 매거진 / 인쇄 magazine 웹 에디션 | Apartamento/Cabana print-derived | `prompts/design/web/editorial-magazine.md` |
+| `editorial-magazine` | 디지털 매거진 / 인쇄 magazine 웹 에디션 | Apartamento/Cabana/데이즈드코리아 print-derived | `prompts/design/web/editorial-magazine.md` |
 | `education-edtech` | EdTech / 학습 플랫폼 | Duolingo/Coursera friendly + 한국 EdTech | `prompts/design/web/education-edtech.md` |
 | `real-estate-kr` | 한국 부동산 / 분양 마케팅 | 코오롱 하늘채/블랑써밋 cinematic | `prompts/design/web/real-estate-kr.md` |
+| `kbeauty-cosmetics` | K-beauty / Korean cosmetics | 동국제약 마데키엘/조선미녀/닥터자르트 soft warm photographic | `prompts/design/web/kbeauty-cosmetics.md` |
+| `kpop-entertainment` | K-pop artist / entertainment platform | HYBE/SM/YG/Weverse 빅히트뮤직 bold cinematic dark | `prompts/design/web/kpop-entertainment.md` |
+| `medical-clinic` | Premium clinic / 의원 / 펫의료 | 뷰웰의원/가까이한의원/픽케어 trustworthy wellness-adjacent | `prompts/design/web/medical-clinic.md` |
+| `museum-cultural` | 박물관 / 디지털 역사관 / anniversary | 퐁피두센터 한화/대구대 70주년/SP삼화 100년 archival editorial | `prompts/design/web/museum-cultural.md` |
+| `automotive-mobility` | 자동차 / EV / 모빌리티 brand | 그린카/HM그룹/현대/Tesla/Polestar precision-engineered | `prompts/design/web/automotive-mobility.md` |
 
-### Mobile (5)
+### Mobile (8)
 
 | Slug | Domain | Reference 톤 | Path |
 |---|---|---|---|
@@ -53,6 +58,9 @@ metadata:
 | `fintech-app` | Banking / Investment | Toss/KakaoBank/Wise transaction-first | `prompts/design/mobile/fintech-app.md` |
 | `content-streaming` | Music / Video streaming | Spotify/Apple Music immersive | `prompts/design/mobile/content-streaming.md` |
 | `productivity-app` | Tasks / Notes | Things/Linear/Bear focused minimal | `prompts/design/mobile/productivity-app.md` |
+| `insurance-mobile` | 한국 보험 모바일 가입·관리 | 삼성화재 CM/AXA/한화자산운용/KB국민카드 transaction-confidence | `prompts/design/mobile/insurance-mobile.md` |
+| `ecommerce-mobile-kr` | 한국 대형 유통 mobile commerce | 롯데하이마트/더현대Hi/무신사/29CM/마켓컬리 product-photo-driven | `prompts/design/mobile/ecommerce-mobile-kr.md` |
+| `fnb-membership` | F&B 멤버십 / 사이렌오더 카페·베이커리 | 이디야멤버스/영커피/스타벅스/메가커피 warm hospitality | `prompts/design/mobile/fnb-membership.md` |
 
 ## Activation Flow (사용자 요청 → 코드 출력)
 

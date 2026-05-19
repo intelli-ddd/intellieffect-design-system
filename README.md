@@ -7,10 +7,10 @@ IntelliEffect 팀 내부 Design System Prompt (DSP) 카탈로그 + designer agen
 ## 무엇이 들어있나
 
 - **1 agent**: `agents/designer.md` — coder agent와 mirror된 design-task delegate. DSP를 spec으로 받아 코드 생성 + screenshot iteration loop 자동 실행.
-- **12 DSP**: `prompts/design/{web,mobile}/<domain>.md` — 각각 4 sections (Design System Definition / Layout & Structure / UI Elements & Animation / Consistency Mandate) + AI-generic banned 패턴 명시.
+- **20 DSP**: `prompts/design/{web,mobile}/<domain>.md` — 각각 4 sections (Design System Definition / Layout & Structure / UI Elements & Animation / Consistency Mandate) + AI-generic banned 패턴 명시.
 - **1 template**: `prompts/design/_template.md` — 새 DSP 작성 양식.
 
-### Web DSP (7개)
+### Web DSP (12개)
 
 | Slug | Domain | Reference |
 |---|---|---|
@@ -18,11 +18,16 @@ IntelliEffect 팀 내부 Design System Prompt (DSP) 카탈로그 + designer agen
 | `fintech-saas` | B2B Financial SaaS | Stripe, Mercury, Brex, Ramp, Linear |
 | `corporate-b2b` | Enterprise / Consulting / AI Services | Vercel, Notion, Anthropic, IBM Carbon |
 | `ecommerce-luxury` | Premium / Niche e-commerce | Aesop, MR PORTER, Hermès, COS |
-| `editorial-magazine` | 디지털 매거진 / 인쇄 magazine 웹 에디션 | Apartamento, Cabana, MAGAZINE B |
+| `editorial-magazine` | 디지털 매거진 / 인쇄 magazine 웹 에디션 | Apartamento, Cabana, MAGAZINE B, 데이즈드코리아 |
 | `education-edtech` | EdTech / 학습 플랫폼 | Duolingo, Coursera, 천재교과서 |
 | `real-estate-kr` | 한국 부동산 / 분양 마케팅 | 코오롱 하늘채, 대우건설 블랑써밋 (지디웹 수상작) |
+| `kbeauty-cosmetics` | K-beauty / Korean cosmetics | 동국제약 마데키엘, 멜로우앤코, 조선미녀, 닥터자르트, 라네즈 (지디웹 2026) |
+| `kpop-entertainment` | K-pop entertainment / artist platform | HYBE, SM, YG, JYP, Weverse, 빅히트뮤직 (지디웹 2026) |
+| `medical-clinic` | Premium medical clinic / 의원 / 펫의료 | 뷰웰의원, 가까이한의원, 픽케어, 압구정 피부과 (지디웹 2026) |
+| `museum-cultural` | 박물관 / 디지털 역사관 / anniversary marketing | 퐁피두센터 한화, 대구대학교 70주년, SP삼화 100년 동행 (지디웹 2026) |
+| `automotive-mobility` | 자동차 / EV / 모빌리티 brand | 그린카, HM그룹, 현대, 기아, Tesla, Polestar (지디웹 2026) |
 
-### Mobile DSP (5개)
+### Mobile DSP (8개)
 
 | Slug | Domain | Reference |
 |---|---|---|
@@ -31,6 +36,9 @@ IntelliEffect 팀 내부 Design System Prompt (DSP) 카탈로그 + designer agen
 | `fintech-app` | Banking / Investment | Toss, KakaoBank, Wise, Revolut |
 | `content-streaming` | Music / Video streaming | Spotify, Apple Music, Netflix, 멜론 |
 | `productivity-app` | Tasks / Notes | Notion mobile, Linear mobile, Things 3 |
+| `insurance-mobile` | 한국 보험 모바일 가입·관리 | 삼성화재 CM, AXA손해보험, 한화자산운용, KB국민카드, 롯데카드 (지디웹 2026) |
+| `ecommerce-mobile-kr` | 한국 대형 유통 mobile commerce | 롯데하이마트, 더현대Hi, 무신사, 29CM, 마켓컬리 (지디웹 2026) |
+| `fnb-membership` | F&B 멤버십 / 카페·베이커리 (사이렌오더 패턴) | 이디야멤버스, 영커피, 스타벅스 사이렌오더, 메가커피 (지디웹 2026) |
 
 ## Installation — 두 가지 path 중 선택
 
