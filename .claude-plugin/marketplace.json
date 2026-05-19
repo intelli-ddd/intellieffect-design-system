@@ -1,0 +1,20 @@
+{
+  "name": "intellieffect-design-system",
+  "owner": {
+    "name": "IntelliEffect",
+    "email": "qweehd1@gmail.com"
+  },
+  "metadata": {
+    "description": "IntelliEffect 팀 design system — 12 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent. frontend-design 공식 plugin의 IntelliEffect wrapper.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "intellieffect-design",
+      "description": "IntelliEffect 팀 design system wrapper. AUTO-TRIGGER on any UI/UX design request — hero / landing page / pricing / dashboard / mobile app screen / web component / Tailwind theme / Motion·GSAP animation 등. 12 도메인별 DSP (Design System Prompt) 카탈로그 자동 인용 + designer agent 위임. Web (7): wellness-platform, fintech-saas, corporate-b2b, ecommerce-luxury, editorial-magazine, education-edtech, real-estate-kr. Mobile (5): fitness-app, wellness-app, fintech-app, content-streaming, productivity-app. 사용 패턴: skill 활성화 시 사용자 요청에서 도메인 추출 → 매칭 DSP 인용 → Claude Code면 designer agent (Sonnet) 위임, 그 외 환경이면 DSP inline 적용. frontend-design@claude-plugins-official plugin 위에 IntelliEffect 회사 token + banned 패턴 강제. 의존성: frontend-design plugin 권장 (없어도 동작), Playwright MCP (iteration loop용).",
+      "source": "./",
+      "strict": false,
+      "skills": ["./skills/intellieffect-design"]
+    }
+  ]
+}

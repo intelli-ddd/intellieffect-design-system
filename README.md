@@ -32,7 +32,24 @@ IntelliEffect 팀 내부 Design System Prompt (DSP) 카탈로그 + designer agen
 | `content-streaming` | Music / Video streaming | Spotify, Apple Music, Netflix, 멜론 |
 | `productivity-app` | Tasks / Notes | Notion mobile, Linear mobile, Things 3 |
 
-## Installation
+## Installation — 두 가지 path 중 선택
+
+### Path A — Claude Code Plugin (Recommended)
+
+자동 트리거 skill. UI 디자인 요청 시 description match로 자동 활성화. **팀원이 가장 적은 마찰로 사용 가능.**
+
+```bash
+# 1. 본 plugin (자동 트리거 skill + designer agent)
+claude plugin marketplace add intelli-ddd/intellieffect-design-system
+claude plugin install intellieffect-design@intellieffect-design-system
+
+# 2. base aesthetic guardrail (강력 권장)
+claude plugin install frontend-design@claude-plugins-official
+```
+
+새 Claude Code 세션부터 자동 작동. UI 작업 요청 시 `intellieffect-design` skill이 description match로 활성화되며, DSP 카탈로그 안내 + designer agent 위임 패턴이 컨텍스트에 inject됨.
+
+### Path B — Manual symlink (Cursor/Codex 등 non-Claude-Code 환경 또는 dotfiles 패턴 선호)
 
 ```bash
 gh repo clone intelli-ddd/intellieffect-design-system
@@ -46,7 +63,23 @@ cd intellieffect-design-system
 
 기존 파일이 있으면 `.removed_<timestamp>` 접미사로 보존 (rm 대신 mv — file-safety rule).
 
-**중요:** 설치 후 **Claude Code 세션 재시작**해야 designer agent가 registry에 노출됨.
+**중요:** 두 path 중 어느 쪽을 선택하든 설치 후 **Claude Code 세션 재시작** 필요 — agent / skill registry는 세션 시작 시점에 캐싱됨.
+
+### 두 path의 차이
+
+| | Path A (Plugin) | Path B (Manual symlink) |
+|---|---|---|
+| 자동 트리거 | ✅ description match로 활성화 | ❌ 명시적 호출 필요 |
+| Claude Code 외 환경 | designer agent는 Claude Code 한정. DSP markdown은 어디서든 portable. | DSP markdown은 어디서든 portable. designer agent도 마찬가지. |
+| 업데이트 | `claude plugin marketplace update` 한 줄 | `git pull` |
+| 권장 사용자 | Claude Code 위주 팀원 | dotfiles 패턴 / 여러 IDE 혼용 팀원 |
+
+두 path를 **동시에 적용해도 무방** — plugin은 skill 자동 트리거 제공, manual symlink는 `~/.claude/agents/designer.md` + `~/.claude/prompts/design/` 직접 접근 경로 확보.
+
+## 의존성 (선택 설치)
+
+- **`frontend-design@claude-plugins-official`** (강력 권장) — base aesthetic guardrail. 본 plugin은 그 위에 IntelliEffect token 강제하는 wrapper로 작동.
+- **Playwright MCP server** (designer agent의 iteration loop 사용 시 필요) — `claude_desktop_config.json` 또는 `.mcp.json`에 `@playwright/mcp` 설정.
 
 ## 사용 패턴
 
