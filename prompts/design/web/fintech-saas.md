@@ -332,3 +332,295 @@ Command-driven action에 강제 — 검색·shortcuts·dialog:
 본 DSP의 약 70%가 banned 패턴 (negative constraint). 30%가 positive spec. 사용자가 결과물에서 "AI 느낌 난다"고 평가하면, banned list가 부족한 것이지 positive spec이 부족한 것이 아니다. 더 구체적 negative constraint 추가 필요.
 
 이 DSP를 기준으로 전체 사이트의 craft signal을 일관 확장하라. 결과물은 **Stripe·Mercury·Linear·Vercel 수준의 award-grade**여야 한다 — "잘 만든 SaaS template" 수준은 failure.
+
+---
+
+## 5. Interactive Patterns (v2.1 추가 — motion layer)
+
+**Award-grade의 진짜 차이는 motion에서 옴.** Static 텍스트만으로는 절대 도달 불가능. 본 섹션의 spec은 모든 marketing/dashboard 페이지에 강제 적용.
+
+### 5.1 라이브러리 분담 (역할 분리, 충돌 없음)
+
+| 영역 | 라이브러리 | 예시 |
+|---|---|---|
+| Component lifecycle / gesture / layout | **Framer Motion (motion)** | `useScroll`, `useTransform`, `AnimatePresence`, `layoutId`, `whileTap` |
+| Scroll-triggered / timeline / SplitText | **GSAP** | `ScrollTrigger pin/scrub`, `SplitText chars/lines`, complex sequencing |
+| Smooth scroll | **Lenis** | root level 1회 init, mobile auto-disable |
+| Page navigation | **View Transitions API** (Next.js 15+ `unstable_ViewTransition`) | shared element morph, route crossfade |
+| Microinteractions | **CSS-only** | `font-variation-settings` transition, `:hover`, `@keyframes` |
+| Avoid | **R3F / Rive / Lottie** | bundle 비용 대비 ROI 낮음. Marketing 페이지에 박지 말 것 (product UI animation은 별개) |
+
+### 5.2 AI-template motion fingerprint (필수 회피 — failure 사유)
+
+다음 5개는 LLM의 motion default — 결과물에 등장 시 즉시 reject:
+
+1. ❌ **모든 element에 0.3s linear fade-in on mount** — Lovable/v0 시그너처. 핵심 hero element만 stagger 적용.
+2. ❌ **`scale(1.05) + shadow-lg + transition-all` hover** — generic Tailwind default.
+3. ❌ **Bouncy spring buttons** (`stiffness 100 damping 10`) — 모든 버튼에 spring overshoot.
+4. ❌ **데코 cursor-follower / meteor / sparkle / 페이지 따라가는 라인** — "the animation was capturing all their attention while the actual product messaging went unread"
+5. ❌ **`0.3s ease-in-out` 또는 `linear` everywhere** — easing curve `cubic-bezier(0.22, 1, 0.36, 1)` 또는 `expo.out` 권장
+
+### 5.3 Award-grade interactive spec — 18개 actionable
+
+#### A. Typography motion (5개)
+
+**A1. Variable font weight 400→510 hover transition** (Linear craft signal, fintech-saas 시그너처)
+```css
+.nav-link, .button-text, .link {
+  font-variation-settings: 'wght' 400;
+  transition: font-variation-settings 180ms ease-out;
+}
+.nav-link:hover { font-variation-settings: 'wght' 510; }
+```
+Library: **CSS-only**. Inter Variable / Geist Variable 필수. `font-weight` 직접 transition은 stepped — `font-variation-settings`만 부드러움.
+
+**A2. Hero headline은 GSAP SplitText chars + scroll-trigger reveal (once)**
+```javascript
+import { gsap } from 'gsap';
+import { SplitText, ScrollTrigger } from 'gsap/all';
+gsap.registerPlugin(SplitText, ScrollTrigger);
+
+const split = SplitText.create('.hero-h1', { type: 'chars' });
+gsap.from(split.chars, {
+  opacity: 0, y: 40, duration: 0.6, stagger: 0.02, ease: 'expo.out',
+  scrollTrigger: { trigger: '.hero-h1', start: 'top 85%', once: true }
+});
+```
+Library: **GSAP + SplitText (3.13+ free)**.
+
+**A3. Metric 숫자 count-up (`useInView` 트리거, no bouncy spring — 정확하게 land)**
+```jsx
+import { useMotionValue, useTransform, animate, useInView } from 'motion/react';
+// onInView: animate(count, target, { duration: 1.2, ease: [0.22, 1, 0.36, 1] })
+```
+Library: **Framer Motion**.
+
+**A4. Logo cloud marquee (가로 무한 스크롤, `ease: 'linear'`, pause on hover)**
+```jsx
+<motion.div
+  animate={{ x: ['0%', '-50%'] }}
+  transition={{ duration: 30, ease: 'linear', repeat: Infinity }}
+  className="hover:[animation-play-state:paused]"
+/>
+```
+Library: **Framer Motion**.
+
+**A5. Section eyebrow는 mono uppercase tracking-wider, 정적 (no animation)**
+```jsx
+<p className="font-mono text-xs uppercase tracking-[0.15em] text-neutral-500">
+  — 04 / Integrations
+</p>
+```
+Library: **CSS-only**.
+
+#### B. Cursor / hover (3개)
+
+**B1. Primary CTA에만 magnetic button** (spring 150 / damping 15 / mass 0.1, **모든 버튼에 박지 말 것**)
+```jsx
+import { motion, useState, useRef } from 'motion/react';
+
+const ref = useRef(null);
+const [pos, setPos] = useState({ x: 0, y: 0 });
+const handleMouse = (e) => {
+  const { clientX, clientY } = e;
+  const { left, top, width, height } = ref.current.getBoundingClientRect();
+  setPos({ x: clientX - (left + width / 2), y: clientY - (top + height / 2) });
+};
+
+<motion.button
+  ref={ref}
+  onMouseMove={handleMouse}
+  onMouseLeave={() => setPos({ x: 0, y: 0 })}
+  animate={{ x: pos.x, y: pos.y }}
+  transition={{ type: 'spring', stiffness: 150, damping: 15, mass: 0.1 }}
+/>
+```
+Library: **Framer Motion**. 페이지당 magnetic button 최대 1개.
+
+**B2. Card hover는 `scale(1.02) + translateY(-2px)` + border-color shift** (NOT `scale(1.05) + shadow-lg`)
+```css
+.card {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms;
+  border: 1px solid theme(neutral.200);
+}
+.card:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: theme(brand.500);
+}
+```
+Library: **CSS-only**.
+
+**B3. Mouse-move tilt는 의도된 곳 1-2개에만** (3D pin / 직접 만지는 product mock UI 한정)
+```jsx
+const x = useMotionValue(0);
+const y = useMotionValue(0);
+const rotateX = useTransform(y, [-100, 100], [10, -10]);
+const rotateY = useTransform(x, [-100, 100], [-10, 10]);
+```
+Library: **Framer Motion**.
+
+#### C. Scroll-driven (4개)
+
+**C1. Page top scroll progress bar** (1px height, brand color)
+```jsx
+const { scrollYProgress } = useScroll();
+<motion.div
+  style={{ scaleX: scrollYProgress, transformOrigin: 'left' }}
+  className="fixed top-0 inset-x-0 h-px bg-brand-500 z-50"
+/>
+```
+Library: **Framer Motion**.
+
+**C2. "How it works" 3-step은 GSAP pin + scrub 가로 슬라이드**
+```javascript
+gsap.timeline({
+  scrollTrigger: { trigger: '.howit', start: 'top top', end: '+=2000', scrub: 1, pin: true }
+})
+  .to('.step-1', { autoAlpha: 0 })
+  .from('.step-2', { autoAlpha: 0 }, '<')
+  .to('.step-2', { autoAlpha: 0 }, '+=0.5')
+  .from('.step-3', { autoAlpha: 0 }, '<');
+```
+Library: **GSAP ScrollTrigger**.
+
+**C3. Feature illustration SVG path scroll-draw** (`pathLength` 0→1)
+```jsx
+const { scrollYProgress } = useScroll({
+  target: svgRef,
+  offset: ['start 80%', 'end 20%']
+});
+<motion.path style={{ pathLength: scrollYProgress }} d="M0,50 ..." />
+```
+Library: **Framer Motion**.
+
+**C4. Lenis smooth scroll root, mobile auto-disable** (touch hijacking은 평가절하 신호)
+```jsx
+import { ReactLenis } from 'lenis/react';
+<ReactLenis root options={{ lerp: 0.1, smoothTouch: false }}>
+  {children}
+</ReactLenis>
+```
+Library: **lenis/react**.
+
+#### D. Page / route transitions (2개)
+
+**D1. Case study / pricing detail은 View Transitions API shared element morph** (Next.js 15+)
+```jsx
+import { unstable_ViewTransition as ViewTransition } from 'next';
+
+<ViewTransition>
+  <Image
+    src={card.image}
+    style={{ viewTransitionName: `card-${card.id}` }}
+  />
+</ViewTransition>
+```
+Library: **Next.js 15+ View Transitions API**.
+
+**D2. Modal / drawer는 `AnimatePresence mode="wait"` + spring 300/24**
+```jsx
+<AnimatePresence mode="wait">
+  {open && (
+    <motion.div
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 20, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+    />
+  )}
+</AnimatePresence>
+```
+Library: **Framer Motion**.
+
+#### E. Microinteractions (2개)
+
+**E1. Button press는 `whileTap={{ scale: 0.97 }}` + brightness hover** (NOT bouncy spring scale)
+```jsx
+<motion.button
+  whileTap={{ scale: 0.97 }}
+  transition={{ duration: 0.1 }}
+  className="transition-[filter] hover:brightness-110"
+/>
+```
+Library: **Framer Motion**.
+
+**E2. Loading skeleton shimmer, prefers-reduced-motion에서 정적 회색**
+```css
+.skeleton {
+  background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: #1a1a1a; }
+}
+```
+Library: **CSS-only**.
+
+#### F. 3D / WebGL (1개, 강한 절제)
+
+**F1. Hero gradient mesh — Stripe minigl 패턴 1개만, IntersectionObserver로 viewport 밖 RAF 정지**
+```javascript
+// stripe-gradient.js (Kevin Hufnagl 패턴, kevinhufnagl/thelevicole 출처)
+import { Gradient } from './stripe-gradient.js';
+const gradient = new Gradient({
+  canvas: '#hero-gradient',
+  colors: ['#1E4DB7', '#5C7CF0', '#A3B8F5', '#0E1014']  // DSP brand color 4개만
+});
+
+// viewport 가드
+const observer = new IntersectionObserver(([entry]) => {
+  entry.isIntersecting ? gradient.play() : gradient.pause();
+});
+observer.observe(canvas);
+```
+Library: **vanilla JS (kevinhufnagl/thelevicole stripe-gradient)**. **R3F 금지** — bundle 200KB+ ROI 낮음.
+
+#### G. Live data / pulse (1개)
+
+**G1. Live status indicator (실시간 가격·status) 2s breathing pulse**
+```css
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+}
+```
+Library: **CSS-only**.
+
+### 5.4 prefers-reduced-motion 무조건 대응 (accessibility ABSOLUTE)
+
+모든 motion 컴포넌트는 `@media (prefers-reduced-motion: reduce)` fallback 제공. 위반 시 failure.
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+Framer Motion은 자동으로 `useReducedMotion` hook 활용:
+```jsx
+const shouldReduceMotion = useReducedMotion();
+<motion.div transition={shouldReduceMotion ? { duration: 0 } : springConfig} />
+```
+
+### 5.5 Motion 디자인 원칙 (verbatim from medium/ketanmk 2026-04-22)
+
+> "the animation was in service of the message. It made you understand the product better. It wasn't decoration for decoration's sake."
+
+본 DSP의 motion 룰 = **purpose-bound only**. Decoration은 자른다. 모든 motion이 "이게 왜 필요한가"에 답할 수 있어야 한다.
