@@ -181,10 +181,28 @@ CODEX_DIRECTIVE="Generate a single bitmap image using the imagegen skill. Do not
 Prompt:
 ${PROMPT_BODY}"
 
-# mtime marker for new-file detection
-MARKER="$(mktemp -t codex-media-gen-XXXXXX)"
+# Portable mkdir-based lock — serializes parallel invocations so the
+# post-codex `find -newer marker` can reliably pick THIS invocation's file.
+# Reason: multiple parallel codex exec sessions all write to
+# ~/.codex/generated_images/<session-uuid>/. Without serialization,
+# `find -newer marker | head -1` can pick another session's file.
+# (macOS has no GNU flock by default; mkdir is atomic on every POSIX FS.)
+mkdir -p "$CODEX_IMAGES_DIR"
+LOCKDIR="${CODEX_IMAGES_DIR}/.codex-media-gen.lockdir"
+LOCK_WAIT=0
+while ! mkdir "$LOCKDIR" 2>/dev/null; do
+  sleep 1
+  LOCK_WAIT=$((LOCK_WAIT + 1))
+  if [[ $LOCK_WAIT -ge $((TIMEOUT_SEC * 2)) ]]; then
+    echo "✗ Lock timeout — another codex-media-gen.sh holding $LOCKDIR for >${LOCK_WAIT}s." >&2
+    echo "  If stale, manually: rmdir $LOCKDIR" >&2
+    exit 8
+  fi
+done
+
 LOG="$(mktemp -t codex-media-gen-log-XXXXXX)"
-trap 'rm -f "$MARKER" "$LOG"' EXIT
+MARKER="$(mktemp -t codex-media-gen-XXXXXX)"
+trap 'rm -f "$LOG" "$MARKER"; rmdir "$LOCKDIR" 2>/dev/null || true' EXIT
 
 echo "→ Generating: $DSP_SLUG / $PROMPT_NAME ($SIZE, $QUALITY) via codex exec" >&2
 echo "  Output target: $OUTPUT" >&2
@@ -201,7 +219,8 @@ fi
 set -e
 
 # Find newest png after marker — Codex stores images in
-# ~/.codex/generated_images/<session-uuid>/ig_<hash>.png
+# ~/.codex/generated_images/<session-uuid>/ig_<hash>.png.
+# Inside the lock, exactly one new file (this invocation's) should exist.
 NEW_IMG=$(find "$CODEX_IMAGES_DIR" -name "ig_*.png" -newer "$MARKER" 2>/dev/null | head -1)
 
 if [[ -z "$NEW_IMG" ]]; then
