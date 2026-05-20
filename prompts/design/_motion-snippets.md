@@ -665,6 +665,343 @@ Flip.from(state, {
 
 ---
 
+## Snippet 15 — Ken Burns slow zoom (image hero on-load only)
+
+<!-- motion-snippet: name=ken-burns-zoom stack=gsap -->
+
+```tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { useReducedMotion } from "motion/react";
+import Image from "next/image";
+
+export function KenBurnsHero({
+  src,
+  alt,
+  duration = 2.0,
+  scale = 1.05,
+}: {
+  src: string;
+  alt: string;
+  duration?: number;
+  scale?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    if (reduce || !ref.current) return;
+    const wrap = ref.current.querySelector<HTMLElement>(".ken-burns-inner");
+    if (!wrap) return;
+
+    // Marketing hero exception — single playback, NO loop.
+    // DSP rule: scale 1.0 → 1.05 over ≤2000ms ease-out.
+    gsap.fromTo(
+      wrap,
+      { scale: 1.0 },
+      { scale, duration, ease: "power2.out" },
+    );
+  }, [reduce, duration, scale]);
+
+  return (
+    <div
+      ref={ref}
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        // z-index 0 (NOT negative) — negative z-index puts the wrapper
+        // BELOW the parent's solid background and the image disappears.
+        // Stacking order is controlled by sibling content using
+        // position: relative + zIndex: 1+ (typography, CTAs, meta blocks).
+        zIndex: 0,
+      }}
+    >
+      <div className="ken-burns-inner" style={{ position: "absolute", inset: 0 }}>
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover" }}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+**MUST USE**: hero photographic / video poster 자리에 slow Ken Burns 가 cinematic immersion 시그니처. K-pop / automotive / museum DSP 에서 활용. 단 loop 금지 — 단발 single playback. Marketing hero exception 외에는 자제.
+
+---
+
+## Snippet 16 — Horizontal scroll carousel (ScrollTrigger pin + horizontal translate)
+
+<!-- motion-snippet: name=horizontal-scroll-carousel stack=gsap -->
+
+```tsx
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useReducedMotion } from "motion/react";
+
+export function HorizontalCarousel({ children }: { children: React.ReactNode }) {
+  const sectionRef = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const reduce = useReducedMotion();
+
+  useGSAP(
+    () => {
+      if (reduce) return;
+      if (!sectionRef.current || !trackRef.current) return;
+
+      const section = sectionRef.current;
+      const track = trackRef.current;
+
+      const getScrollDistance = () => {
+        const totalWidth = track.scrollWidth;
+        const visibleWidth = section.clientWidth;
+        return Math.max(0, totalWidth - visibleWidth);
+      };
+
+      gsap.to(track, {
+        x: () => -getScrollDistance(),
+        ease: "none",
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: () => `+=${getScrollDistance()}`,
+          pin: true,
+          scrub: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+    },
+    { scope: sectionRef, dependencies: [reduce] },
+  );
+
+  return (
+    <section
+      ref={sectionRef}
+      style={{ height: "100vh", overflow: "hidden", position: "relative" }}
+    >
+      <div
+        ref={trackRef}
+        style={{
+          display: "flex",
+          height: "100%",
+          alignItems: "center",
+          gap: "24px",
+          paddingInline: "64px",
+          willChange: "transform",
+        }}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+```
+
+**MUST USE**: cinematic immersion DSP (K-pop discography, automotive lineup, museum collection) 에서 vertical grid batch 대신 horizontal scroll-driven carousel 로 차별화. Section 자체가 viewport 100vh 차지 + scroll = horizontal pan.
+
+---
+
+## Snippet 17 — 3D tilt card hover (Framer Motion useSpring + mouse position)
+
+<!-- motion-snippet: name=tilt-3d-hover stack=framer -->
+
+```tsx
+"use client";
+
+import { useRef, type MouseEvent as ReactMouseEvent } from "react";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "motion/react";
+
+export function TiltCard({
+  children,
+  intensity = 10,
+}: {
+  children: React.ReactNode;
+  intensity?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const reduce = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const rotateY = useTransform(x, [-100, 100], [-intensity, intensity]);
+  const rotateX = useTransform(y, [-100, 100], [intensity, -intensity]);
+
+  const spring = { stiffness: 150, damping: 20, mass: 0.5 };
+  const sx = useSpring(rotateX, spring);
+  const sy = useSpring(rotateY, spring);
+
+  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (reduce || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    x.set(e.clientX - cx);
+    y.set(e.clientY - cy);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateX: reduce ? 0 : sx,
+        rotateY: reduce ? 0 : sy,
+        transformPerspective: 1000,
+        transformStyle: "preserve-3d",
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+```
+
+**MUST USE**: roster / member / artist card hover signature. K-pop / e-sports / artist platform DSP. agency-portfolio 의 scale 1.03 simple hover 와 명확히 차별 — 3D depth perception.
+
+---
+
+## Snippet 18 — Real-time countdown ticker (setInterval Mono caps)
+
+<!-- motion-snippet: name=countdown-ticker stack=react -->
+
+```tsx
+"use client";
+
+import { useEffect, useState, type CSSProperties } from "react";
+
+export function CountdownTicker({
+  target,
+  style,
+  ariaLabel,
+}: {
+  target: Date | string;
+  style?: CSSProperties;
+  ariaLabel?: string;
+}) {
+  const targetMs = typeof target === "string" ? new Date(target).getTime() : target.getTime();
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    // 1s tick — Mono caps tabular-nums ticker
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const diff = Math.max(0, targetMs - now);
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff / 3_600_000) % 24);
+  const minutes = Math.floor((diff / 60_000) % 60);
+  const seconds = Math.floor((diff / 1_000) % 60);
+
+  return (
+    <span
+      role="timer"
+      aria-label={ariaLabel}
+      style={{
+        fontVariantNumeric: "tabular-nums",
+        fontFeatureSettings: '"tnum"',
+        ...style,
+      }}
+    >
+      {String(days).padStart(2, "0")}D{" "}
+      {String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+    </span>
+  );
+}
+```
+
+**MUST USE**: K-pop comeback countdown / album release / event countdown 시그니처. SSR-safe (initial Date.now() in lazy initializer, hydration mismatch 우려 시 `suppressHydrationWarning`).
+
+---
+
+## Snippet 19 — Sequenced staggered hero load (multi-element timeline)
+
+<!-- motion-snippet: name=sequenced-hero-load stack=gsap -->
+
+```tsx
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { useReducedMotion } from "motion/react";
+
+// agency-portfolio 의 "all-at-once stagger 30ms" 와 차별 — 명확한 sequence 단계
+// 각 element 가 timing label 로 정확한 시점에 등장.
+
+const heroRef = useRef<HTMLDivElement | null>(null);
+const reduce = useReducedMotion();
+
+useGSAP(
+  () => {
+    if (reduce) return;
+
+    // Multi-stage timeline — 각 stage 가 명확히 다른 element + timing
+    const tl = gsap.timeline({ defaults: { ease: "brand" } });
+
+    // Stage 1 (t=0.2s): eyebrow
+    tl.from(".hero-eyebrow", { opacity: 0, y: -8, duration: 0.5 }, 0.2);
+
+    // Stage 2 (t=0.4s): 한글 아티스트명 word stagger (한글 jamo 분해 방지)
+    tl.from(".hero-title-ko .split-word", {
+      opacity: 0,
+      yPercent: 100,
+      duration: 0.8,
+      stagger: 0.08,  // 80ms — slow & deliberate
+    }, 0.4);
+
+    // Stage 3 (t=0.7s): 영문 italic char stagger
+    tl.from(".hero-title-en .split-char", {
+      opacity: 0,
+      yPercent: 100,
+      duration: 0.7,
+      stagger: 0.04,  // 40ms
+    }, 0.7);
+
+    // Stage 4 (t=1.0s): tagline + bottom info strip stagger
+    tl.from([".hero-tagline", ".hero-info-strip > *"], {
+      opacity: 0,
+      y: 12,
+      duration: 0.7,
+      stagger: 0.1,
+    }, 1.0);
+
+    // Stage 5 (t=1.3s): CTA spring scale-in (NOT magnetic — that's agency signature)
+    tl.from(".hero-cta", {
+      opacity: 0,
+      scale: 0.95,
+      duration: 0.5,
+      ease: "back.out(1.2)",
+      stagger: 0.08,
+    }, 1.3);
+  },
+  { scope: heroRef, dependencies: [reduce] },
+);
+```
+
+**MUST USE**: K-pop / editorial / cinematic immersion DSP — sequential 8-stage load 가 brand-driven story telling. agency 의 chars-stagger-only 패턴 과 명확히 차별.
+
+---
+
 ## Pre-commit motion stack audit (designer agent 의무)
 
 코드 생성 완료 후 다음 grep 실행해 motion stack 실제 사용 검증. 0 매치면 abstract 텍스트만 보고 CSS keyframes 로 fallback 한 것 → re-generate:

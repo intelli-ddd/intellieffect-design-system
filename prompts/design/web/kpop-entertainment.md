@@ -52,21 +52,32 @@ reference: HYBE, SM Entertainment, YG, JYP, Weverse, 빅히트뮤직 (지디웹 
 
 ## 3. UI Elements & Animation
 
-### 🔴 MUST USE — verbatim motion snippets (`prompts/design/_motion-snippets.md`)
+### 🔴 MUST USE — distinct K-pop motion signature (v1.9.2)
 
-K-pop cinematic immersion 톤 적용 시 다음 snippet 6개 verbatim 박는 것이 의무. abstract 텍스트로만 GSAP/ScrollSmoother 언급하고 CSS keyframes 로 fallback 하는 generation 은 fail.
+**중요**: agency-portfolio 의 motion 패턴 (Magnetic CTA / DrawSVG / anime.js morph / SplitText chars 30ms all-at-once / ScrollTrigger pin+scrub fade) 을 그대로 복제하면 **fail**. K-pop 은 cinematic immersion + horizontal flow + 3D depth + countdown ticker 의 distinct signature 가 본질.
+
+**Required motion snippets (의무):**
 
 | Snippet | 적용 위치 | 필수도 |
 |---|---|---|
 | #2 GSAP register | 모든 motion 컴포넌트 상단 import + registerPlugin + CustomEase("brand") | **MANDATORY** |
-| #3 SplitText 아티스트명/앨범명 reveal | hero `<h1>` chars stagger reveal (한글 + 영문 stacked 둘 다) | **MANDATORY** |
-| #4 ScrollTrigger pin/scrub | hero cinematic media + 타이포그래피 layered fade | **MANDATORY** |
-| #7 ScrollTrigger.batch | 디스코그래피 album card / 아티스트 roster card 의 stagger reveal | **MANDATORY** |
-| #8 Magnetic CTA | "LISTEN NOW" primary CTA (Framer Motion spring 150/15/0.1) | recommended |
-| #11 Lenis smooth scroll | 전역 inertia (mobile 에서 disable) | **MANDATORY** |
+| #15 Ken Burns slow zoom | hero photographic single zoom 1.0→1.05 over 2s (single play, no loop) | **MANDATORY** — hero signature |
+| #16 Horizontal scroll carousel | discography section 4-6 album cards 가로 스크롤 (pin + horizontal translate) | **MANDATORY** — agency 의 vertical pin+scrub 와 명확히 다름 |
+| #17 3D tilt card hover | roster member card hover (rotateX/Y ±10° Framer Motion spring) | **MANDATORY** — agency 의 simple scale 1.03 차별 |
+| #18 Countdown ticker | hero eyebrow 또는 우상단 release countdown (D-day HH:MM:SS Mono tabular-nums) | **MANDATORY** — K-pop comeback signature |
+| #19 Sequenced staggered hero load | 8-stage timeline (eyebrow → 한글 → 영문 → tagline → CTA), 각 stage timing 명확 | **MANDATORY** — agency 의 30ms all-at-once 와 차별 |
+| #11 Lenis smooth scroll | 전역 inertia (mobile gate) | **MANDATORY** |
 | #12 prefers-reduced-motion | JS gate + CSS @media 양 layer + Ken Burns 즉시 fallback | **MANDATORY** |
 
-판정: 위 7 snippet 중 #2 + #3 + #4 + #7 + #11 + #12 의 6개 이상 verbatim 적용 안 되면 motion-immersive 톤 실패 — re-generate.
+**Banned (agency-portfolio 시그니처 — kpop 에서 사용 금지):**
+
+- ❌ Snippet #8 Magnetic CTA (agency 시그니처 — opacity 0.85 만 사용)
+- ❌ Snippet #6 DrawSVG monogram (agency 시그니처)
+- ❌ Snippet #10 anime.js path morph (agency 시그니처)
+- ❌ Snippet #4 ScrollTrigger pin+scrub vertical fade (agency hero signature — horizontal 으로 대체)
+- ❌ Snippet #3 의 SplitText chars stagger 30ms all-at-once 패턴 (agency 시그니처 — sequential 8-stage 로 대체)
+
+판정: 위 mandatory 8 snippet 중 7개 이상 verbatim 적용 안 되거나 banned snippet 등장 시 motion-immersive 톤 실패 — re-generate.
 
 
 
