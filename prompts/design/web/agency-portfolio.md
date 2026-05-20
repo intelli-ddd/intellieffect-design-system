@@ -284,7 +284,25 @@ Color: oklch(0.10 0.004 250) background space, oklch(0.78 0.20 65) molten amber 
 
 No close-up worker face. No tool detail. No safety equipment visible. No text. Brutalist mood — industrial sublime.
 
-### 7.6 Brand monogram concept (manual hand-off)
+### 7.6 Hero background plate (Option B — typography 뒤 깊이감 부여)
+
+<!-- media-prompt: name=hero-bg type=image preset=hero-wide provider=gpt-image-1 -->
+
+Style: Brutalist cinematic dark editorial — raw oversized industrial space at night. Single coral accent light source (oklch 0.68 0.22 28) sweeping from upper-right diagonal. Mostly empty negative space, deep shadows, hairline architectural detail. Mood: post-industrial studio, contemplative scale, single subject implied but never centered.
+
+Subject: massive concrete or raw steel architectural surface — could be a single vertical column rising from floor, or a pair of overlapping plinths, or an exposed I-beam. Subject positioned in RIGHT THIRD of frame only — LEFT TWO-THIRDS must be deep negative space (this area will host overlaid white typography in the final composition, so any texture/detail there is forbidden).
+
+Composition: 16:9 landscape, asymmetric — subject right third, void left two-thirds. Subtle hairline grid faintly visible only in shadow regions (almost invisible). Floor plane intersects lower 20% of frame, ceiling implied not seen.
+
+Lighting: single hard direction light from upper-right at 30° angle, casting long cinematic shadow toward lower-left. Color temperature 3200K-3500K. Deep shadows, no fill light. Single coral edge highlight on the subject's right-facing surface only.
+
+Color: oklch(0.08 0.004 250) deepest background void 70% of frame, oklch(0.14 0.005 250) mid-shadow concrete tones 20%, single oklch(0.68 0.22 28) coral accent 5%, no other hue. Strictly monochrome dark + coral accent only.
+
+Usage note: this image will be placed full-bleed behind the hero typography at ~18% opacity with an additional `linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.45) 100%)` left-to-right darkening overlay. Generate WITH that final usage in mind — heavier subject/light energy on the right side, void on the left.
+
+No people. No text or signage. No vehicles. No furniture. No identifiable brand or logo. No motion blur. No film grain emulation. Single subject anchor, deep void elsewhere.
+
+### 7.7 Brand monogram concept (manual hand-off)
 
 <!-- media-prompt: name=brand-monogram type=image preset=cover-square provider=gpt-image-1 -->
 
@@ -300,7 +318,7 @@ Color: oklch(0.96 0.012 80) cream paper, oklch(0.10 0.005 250) ink primary, no t
 
 No watermark. No designer signature. No corner marks beyond hairline grid.
 
-### 7.7 Pre-commit audit hook for media
+### 7.8 Pre-commit audit hook for media
 
 본 DSP 적용 시 generated code 가 placeholder pattern (CSS lines/dots/diag/block) 자리를 사용하면, designer agent 는 다음 매핑이 박혀있는지 확인:
 
