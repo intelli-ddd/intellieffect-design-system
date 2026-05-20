@@ -50,3 +50,103 @@ reference: GDWEB 류 한국 wellness/health 마케팅 사이트
   - 아이콘별 상이한 색상 조합 금지
   - 아이콘은 반드시 배경 없는 단색 아이콘이거나, 전체 시스템에서 동일하게 정의된 단일 배경 규칙만을 사용해야 한다
 - 이 Hero Section을 기준으로 전체 웹사이트의 톤앤매너, 레이아웃, UI 규칙을 일관되고 의도적으로 확장하라.
+
+## 5. 구현 Guardrails (MUST READ)
+
+상위 `prompts/design/_guardrails.md` 의 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) 모두 적용. 본 DSP 특이 trap:
+
+- 본 DSP 는 SplitText / GSAP 권장 안 함 (Section 3 의 "안정적이고 신뢰감 있는 움직임만") — Category A/B/C/D 자동 회피
+- Category E (reduced-motion) 만 의무 — CSS `@media (prefers-reduced-motion: reduce)` 블록으로 모든 keyframe·transition 0.01ms clamp
+
+## 6. Media Generation Prompts
+
+본 DSP 의 hero portrait / feature tile 자리에 들어가는 image 자산을 위한 prompt verbatim. 공통 style descriptor 는 상위 `_media-prompts.md` 의 **Style B — Soft organic wellness** 사용.
+
+생성 방법:
+
+```bash
+# 전제: codex login 완료
+./scripts/codex-media-gen.sh \
+  --dsp wellness-platform \
+  --prompt hero-portrait \
+  --output ../distinctive-ui-test/public/wellness/hero-portrait.png \
+  --size 1024x1536
+```
+
+### 6.1 Hero portrait — 우측 인물 이미지
+
+<!-- media-prompt: name=hero-portrait type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Soft organic wellness lifestyle photography. Warm natural light through large window, 5500K color temperature, gentle falloff into shadow. Mood: morning ritual, slow, embodied, considered. Photographic editorial wellness magazine quality.
+
+Subject: woman in her early 30s holding a warm ceramic mug with both hands, seated at a linen-draped surface near a sunlit kitchen or quiet living room window. Three-quarter view, she is looking down into the mug, slight smile, eyes downcast. Cream linen shirt or oversized cardigan sleeve visible. NO direct face contact with camera.
+
+Composition: 4:5 portrait orientation. Subject anchored to LEFT THIRD of frame, ample empty warm-cream space upper-right with soft window light bleeding in. Out-of-focus botanical fragment (oak branch / dried eucalyptus) at top edge of frame. Background = warm out-of-focus interior, oak wood grain shelf or linen curtain.
+
+Lighting: large window soft light from camera-right at 30°, golden-natural quality, soft falloff into warm shadow on left side of subject. No flash, no harsh shadow, no studio look.
+
+Color: warm cream and oat tones throughout (oklch 0.96 0.012 80 dominant), sage green accent only in single small element (a sprig of herb, a ceramic glaze, dried plant — minimal). Skin tone warm natural. NO cool tones, NO pure white, NO neon, NO saturated jewel tones, NO greys.
+
+NO direct eye contact. NO stock-photo over-perfect smile. NO conference-room or office. NO laptop or screen. NO yoga mat cliché. NO meal prep gear. Single human subject. Editorial wellness magazine quality.
+
+### 6.2 Feature tile — Movement (운동·웰니스 활동)
+
+<!-- media-prompt: name=feature-movement type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: Soft organic wellness lifestyle still life. Warm natural light, embodied moment.
+
+Subject: top-down overhead shot of two bare feet stepping gently onto a folded linen blanket on warm oak wood floor. No equipment, no yoga mat brand visible. Feet only — no full body, no face. OR alternative: close-up of bare hands cupping a small ceramic bowl of mixed nuts and dried fruit on linen napkin.
+
+Composition: 1:1 square, centered subject, generous warm-cream negative space around. Subject 50-60% of frame.
+
+Lighting: warm window light from above-right, soft falloff. 5500K.
+
+Color: dominant cream + oat + warm oak (oklch 0.94-0.96 / 0.012 80), single muted sage green accent in shadow detail. No saturation.
+
+No equipment branding. No yoga props with logos. No fitness watch. Single moment, intimate scale.
+
+### 6.3 Feature tile — Nourishment (식사·차)
+
+<!-- media-prompt: name=feature-nourishment type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: Soft organic wellness still life. Editorial slow-food photography.
+
+Subject: three-quarter overhead shot of a small ceramic teapot pouring herbal tea into a matching cup, steam rising and catching window light, single dried herb sprig (chamomile or mint) resting beside on raw linen napkin. Worn wooden surface texture. Optional: small ceramic plate with whole fruit (pear or fig) at frame edge.
+
+Composition: 1:1 square, hero subject (teapot pour) center-left, plate at lower-right frame edge. Generous negative space upper-right.
+
+Lighting: warm window light from camera-right at 30°, soft directional, catching steam particles. 5000-5500K.
+
+Color: warm cream backdrop (oklch 0.94 0.014 80), oak wood grain mid-tone, single sage green from dried herb sprig. Tea color warm amber. No oversaturated bowls or colorful prop styling.
+
+No utensils with brand logos. No paper napkins. No coffee shop aesthetic. Single moment, considered, slow.
+
+### 6.4 Feature tile — Rest (휴식·수면)
+
+<!-- media-prompt: name=feature-rest type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: Soft organic wellness interior, photographic editorial.
+
+Subject: close-up of soft linen bedding (cream or warm oat tone), gentle wrinkles, single dried lavender or dried botanical placed on the corner of the pillow. Warm morning light coming through curtain (curtain visible upper-left frame, slightly out of focus). NO people, NO sleep tech products, NO sleep mask.
+
+Composition: 1:1 square, bedding texture occupying full frame, dried botanical as small focal point right of center. Curtain corner upper-left providing soft window-light gradient.
+
+Lighting: filtered morning window light from upper-left, very soft, no harsh shadow. 5000K.
+
+Color: cream + warm oat linen dominant, single faint sage green from dried botanical. No deep navy or black accents, no greys.
+
+NO bed frame. NO sleep tracker device. NO phone. NO branded product. Pure texture + light + single botanical.
+
+### 6.5 Pre-commit audit hook for media
+
+본 DSP 적용 시 generated code 가 외부 placeholder image (Unsplash URL 등) 를 사용하면, designer agent 는 매핑되는 media-prompt 가 박혀있는지 확인:
+
+```bash
+# 외부 image URL 사용 색출
+grep -rnE 'unsplash\.com|picsum\.photos|i\.imgur' <project>/app
+
+# DSP 의 media-prompt 매핑 카운트 (≥ 4 기대)
+grep -c "<!-- media-prompt: name=" prompts/design/web/wellness-platform.md
+```
+
+외부 placeholder 사용 자리 N개 → media-prompt N개 매핑 ≥ 1:1.
