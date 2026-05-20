@@ -366,3 +366,259 @@ grep -lE "useReducedMotion\(\)" <project>/app 2>/dev/null | xargs grep -L "prefe
 ```
 
 DSP-specific 추가 룰 있으면 그 DSP 본문에 박고, 공통은 본 문서에 박는다.
+
+---
+
+## Category G — Production-hostile patterns (v1.9.4)
+
+2026-05-17 studiomeyer "Web Design Trends I Stopped Believing In" reality check + line25.com 2026-04-16 트렌드 디스카운트 + cssshowcase 2024-2026 production audit 기반. **Demo / Awwwards 에서는 흔하지만 production 에선 거의 안 ship 하는 패턴 명시화**. designer agent 가 production-grade DSP (B2B SaaS / fintech / commerce / enterprise) 적용 시 차단.
+
+### G.1 Elastic / bouncy spring 어디나 적용
+
+**Trap**: `ease: 'elastic.out(1, 0.5)'` 또는 Framer `transition={{ type: 'spring', bounce: 0.5 }}` 를 모든 hover · transition · CTA 에 적용. 사용자 cursor 가 닿는 모든 element 가 튕김 — production 에서 noise + 멀미.
+
+**Production reality** (Maxima Therapy 자체도 elastic.out 을 CTA 한정 — 모든 hover 아님):
+- B2B SaaS · enterprise 도구 · fintech dashboard 에서 elastic 등장 ≈ unprofessional 시그널
+- 사용자 frequent interaction (10+ /min) 시 motion sickness 누적
+
+**MUST USE**:
+- `ease: 'expo.out'` / `'power2.out'` / `'cubic-bezier(...)'` brand-specific curve 가 default
+- elastic.out 은 **단발성 hero CTA 1개** 또는 **child playful illustrated DSP** 한정
+- B2B / fintech / saas / corporate / medical DSP 에서는 사용 금지
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — 모든 hover 에 elastic
+gsap.to('.card', { scale: 1.1, ease: 'elastic.out(1, 0.5)', duration: 0.8 });
+// ✅ Good — expo / power
+gsap.to('.card', { scale: 1.03, ease: 'expo.out', duration: 0.35 });
+```
+
+**Grep audit**:
+```bash
+# Count elastic.out usage
+COUNT=$(grep -rcE "elastic\.(out|in|inOut)" <project>/app | awk -F: '{s+=$2} END {print s+0}')
+# B2B / fintech / corporate / medical DSP 라면 COUNT > 0 시 수동 확인
+# Playful illustrated DSP 라면 COUNT ≤ 2 (CTA 한정) 기대
+```
+
+---
+
+### G.2 Glassmorphism heavy (`backdrop-blur-xl`)
+
+**Trap**: 모든 card / nav / modal 에 `backdrop-filter: blur(40px)` + low-opacity bg + transparency.
+
+**Production reality** (studiomeyer 2026-05-17 verbatim):
+> "`backdrop-filter: blur()` is still computationally expensive… 15 to 30 percent FPS drops on real user devices… did not become the dominant treatment for hero sections."
+
+- iOS Safari · old Android · Windows IE Edge 호환성 이슈
+- Layered glassmorphism (nav + modal + card 모두) → composite layer 비대화 → janky scroll
+- Apple SwiftUI mimicry 의 가장 흔한 production failure
+
+**MUST USE**:
+- DSP 가 명시적으로 glass surface 정의 한 경우만 (e.g. Apple Vision Pro 시연 DSP) 한정
+- 그 외에는 hairline border + 단색 surface tier
+- `backdrop-filter: saturate(140%) blur(8px)` 같은 가벼운 surface 만 nav sticky 한정 OK
+
+**MUST NOT**:
+```css
+/* ❌ Bad — heavy glass everywhere */
+.card { backdrop-filter: blur(40px) saturate(180%); background: rgba(255,255,255,0.1); }
+.modal { backdrop-filter: blur(60px); }
+.nav { backdrop-filter: blur(30px); }
+/* ✅ Good — minimal */
+.nav-sticky { backdrop-filter: saturate(140%) blur(8px); }
+.card { background: oklch(0.97 0.004 250); border: 1px solid oklch(0 0 0 / 0.06); }
+```
+
+**Grep audit**:
+```bash
+grep -rcE "backdrop-filter:\s*blur\([2-9][0-9]+px|blur\([1-9][0-9]{2,}px" <project>/app
+# Match > 1 시 production-hostile glass — 수동 검증
+```
+
+---
+
+### G.3 Organic blob hero / abstract gradient blob
+
+**Trap**: Hero background 가 organic blob shape (Spline 3D / SVG `<filter>` morph) + multi-color gradient.
+
+**Production reality** (studiomeyer verbatim):
+> "almost never ship on B2B SaaS, e-commerce or any conversion-critical flow."
+
+- AI generation cliché — 사용자가 즉시 "ChatGPT 가 만든 사이트" 인지
+- 전환율 (conversion) 무관 visual noise
+- Color theory · brand discipline 부재 시그널
+
+**MUST USE**:
+- Photographic hero OR brutalist typography OR product mockup OR R3F 3D scene (vehicle / hardware)
+- Solid color + hairline grid + brand accent 만
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — organic blob hero
+<div className="absolute inset-0 -z-10">
+  <svg viewBox="0 0 800 800">
+    <filter id="blob"><feTurbulence ... /></filter>
+    <ellipse fill="url(#rainbow-gradient)" filter="url(#blob)" />
+  </svg>
+</div>
+```
+
+**Grep audit**:
+```bash
+grep -rnE "feTurbulence|blob-bg|organic-blob|conic-gradient" <project>/app
+# Match ≥ 1 + DSP 가 B2B/SaaS/commerce/enterprise/medical 면 fail
+```
+
+---
+
+### G.4 3D / WebGL hero everywhere
+
+**Trap**: 모든 페이지 hero 에 Spline embed 또는 Three.js scene.
+
+**Production reality** (studiomeyer verbatim):
+> "a site with a single Spline scene in the hero loads 800kB to 2MB of JavaScript runtime before the user sees anything. Lighthouse scores [drop]."
+
+- 800kB-2MB JS bundle before user sees anything → Lighthouse Performance 절단
+- Mobile / low-end device 에서 unusable
+- WebGL context creation 실패 시 white screen
+- Battery drain mobile
+
+**MUST USE**:
+- 3D scene 은 cinematic-immersion-auto / luxury hardware / 3D product configurator DSP 한정
+- Mobile 에서 static image fallback 의무 (`matchMedia("(max-width: 768px)")` gate)
+- `requestIdleCallback` 또는 user gesture 후 lazy mount
+- Lighthouse Performance 90+ 유지 (mobile 4G throttle)
+- B2B SaaS / fintech / commerce / editorial / medical DSP 에서 사용 금지
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — eager Spline mount on every page
+import Spline from '@splinetool/react-spline';
+export default function Page() {
+  return <Spline scene="https://.../hero.splinecode" />;  // 2MB runtime
+}
+```
+
+**Grep audit**:
+```bash
+grep -rnE "@splinetool|three\.module|fiber" <project>/app
+# Match + DSP 가 cinematic-immersion-auto 외 다른 DSP 면 fail
+```
+
+---
+
+### G.5 Rainbow gradient / multi-saturated accent
+
+**Trap**: Hero / CTA 에 `linear-gradient(45deg, #ff0080, #7928ca, #00d4ff)` 같은 3-color saturated gradient.
+
+**Production reality**: 2026 award sites 단일 accent + 무채색 99%. Rainbow gradient 는 2018-2020 Stripe mimicry 의 잔재.
+
+**MUST USE**:
+- 단일 accent (DSP token 정의된 oklch 색) 만
+- 무채색 + 1 accent 가 award trend
+- Gradient 사용 시 monochrome variation 만 (예: 같은 hue 의 brighter→darker)
+
+**MUST NOT**:
+```css
+/* ❌ Bad — rainbow gradient */
+.cta { background: linear-gradient(45deg, #ff0080, #7928ca, #00d4ff); }
+.hero-bg { background: conic-gradient(from 0deg, magenta, cyan, yellow); }
+/* ✅ Good — monochrome variation */
+.cta { background: linear-gradient(45deg, oklch(0.55 0.20 28), oklch(0.65 0.20 28)); }
+```
+
+**Grep audit**:
+```bash
+grep -rnE "linear-gradient\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*," <project>/app  # 3+ color
+grep -rnE "conic-gradient|radial-gradient.*saturated" <project>/app
+```
+
+---
+
+### G.6 Kinetic typography 모든 섹션 강제
+
+**Trap**: 모든 섹션 headline + body 에 SplitText chars stagger + scroll-driven kinetic animation.
+
+**Production reality** (studiomeyer 2026-05-17 verbatim):
+> "Kinetic typography is everywhere as a demo on Awwwards and Dribbble. It almost never ships in production. The reason is simple: animated text fights screen readers, fights search crawlers, and adds layout shift that destroys Core Web Vitals scores. Real teams use it sparingly, on hero headlines and section transitions."
+
+**MUST USE**:
+- SplitText 는 hero headline + key section transition 1-2개 한정
+- Body / long-form text 는 정적 표시 (또는 line-level mask 만)
+- `aria-hidden` + 정적 alternative text 의무
+- Core Web Vitals (CLS · LCP) 영향 확인
+
+**MUST NOT**:
+- 모든 `<p>` `<h2>` `<h3>` 에 SplitText chars 적용
+- Body text scrambling / typewriter
+
+**Grep audit**:
+```bash
+grep -c "new SplitText\|SplitText.create" <project>/app/<route>/*.tsx
+# Count > 5 in single route + non-hero usage = production-hostile
+```
+
+---
+
+### G.7 Auto-play 3D / Auto-play video with sound
+
+**Trap**: Hero 가 mount 시 즉시 3D scene 시작 + 사용자 interaction 없이 video 음성 재생.
+
+**Production reality**:
+- 사용자 불쾌 (특히 회사 office / public space 에서 brand 사이트 방문)
+- Browser auto-play policy 변경 (Chrome 2018+, Safari 2020+) — muted only
+- Battery drain · CPU spike on page load
+- Accessibility 위반
+
+**MUST USE**:
+- 3D scene 은 user gesture (scroll / click) 후 시작
+- Auto-play video 는 `muted + playsinline + loop` 의무
+- 사용자가 play 컨트롤 가능
+- `prefers-reduced-motion: reduce` 존중
+
+**MUST NOT**:
+```tsx
+// ❌ Bad
+<video src="hero.mp4" autoPlay />  // unmuted, no controls
+```
+
+---
+
+## Category G summary
+
+Production-hostile patterns 검출 종합 grep audit:
+
+```bash
+PROJECT_DIR=<project>/app/<route>
+
+# G.1 elastic everywhere
+ELASTIC=$(grep -rcE "elastic\.(out|in|inOut)" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+# G.2 heavy glass
+GLASS=$(grep -rcE "backdrop-filter:\s*blur\(([2-9][0-9]|[1-9][0-9]{2,})px" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+# G.3 organic blob
+BLOB=$(grep -rcE "feTurbulence|blob-bg|organic-blob|conic-gradient" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+# G.4 3D everywhere (DSP-conditional)
+WEBGL=$(grep -rcE "@splinetool|three\.module|fiber" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+# G.5 rainbow gradient
+RAINBOW=$(grep -rcE "linear-gradient\([^)]*,[^)]*,[^)]*,[^)]*,[^)]*," "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+# G.6 SplitText 도배
+SPLIT=$(grep -rcE "new SplitText|SplitText\.create" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+
+echo "G.1 elastic: $ELASTIC   G.2 glass: $GLASS   G.3 blob: $BLOB   G.4 webgl: $WEBGL   G.5 rainbow: $RAINBOW   G.6 split: $SPLIT"
+
+# 판정 룰:
+# - B2B SaaS / fintech / corporate / medical DSP: ELASTIC > 1 또는 WEBGL > 0 또는 BLOB > 0 또는 RAINBOW > 0 → fail
+# - 모든 DSP: GLASS > 2 → fail (1개는 sticky nav 한정 OK)
+# - 모든 DSP: SPLIT > 5 / route → 수동 hero/section 한정 확인
+```
+
+각 카테고리 매치 시 designer agent 가 reporting 의 "Pre-commit audit" 섹션에 verbatim 박고, 의도된 사용이면 사유 명시. 의도 안 된 production-hostile 패턴은 fix 후 재실행.
+
+### Reference
+
+- studiomeyer 2026-05-17 "Web Design Trends I Stopped Believing In" — verbatim quotes 위 인용
+- line25.com 2026-04-16 — "All major animations are duplicated with reduced-motion versions"
+- 3str.net 2026 — "production-ready pattern combines CSS scroll-driven animations as baseline with GSAP ScrollTrigger as enhancement"
+- gsap.com/showcase 15-site analysis (2026-05-20) — `13-Wiki/research/2026-05-20-gsap-showcase-research.md`
