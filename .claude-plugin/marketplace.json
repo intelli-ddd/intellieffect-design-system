@@ -5,8 +5,8 @@
     "email": "qweehd1@gmail.com"
   },
   "metadata": {
-    "description": "IntelliEffect 팀 design system — 21 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent + multi-IDE support (Claude Code / Codex CLI / Cursor / Aider) + 17개 랜딩페이지 reference (vault 메타 통합) + Section 5 Interactive motion layer + GSAP plugin 카탈로그 (DrawSVG/Flip/CustomEase/Draggable+Inertia/MotionPath) + anime.js v4 + agency-portfolio DSP (GSAP showcase 11개 award-winning 사이트). 지디웹 한국 시장 reference + animejs.com + gsap.com/showcase 통합. v1.7.0 — Implementation Guardrails 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) verbatim 코드 + grep audit 박힘 (prompts/design/_guardrails.md). designer agent pre-commit audit 의무화 (5 카테고리 모두 0 매치 또는 사유 명시). frontend-design 공식 plugin의 IntelliEffect wrapper.",
-    "version": "1.7.0"
+    "description": "IntelliEffect 팀 design system — 21 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent + multi-IDE support (Claude Code / Codex CLI / Cursor / Aider) + 17개 랜딩페이지 reference (vault 메타 통합) + Section 5 Interactive motion layer + GSAP plugin 카탈로그 + anime.js v4 + agency-portfolio DSP. v1.7.0 — Implementation Guardrails 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) verbatim 코드 + grep audit (prompts/design/_guardrails.md). v1.8.0 — Media Generation Prompts 카탈로그 (prompts/design/_media-prompts.md) + scripts/codex-media-gen.sh (gpt-image-1 호출 wrapper, OPENAI_API_KEY 활용) + agency-portfolio DSP Section 7 (4 project cover image + 1 hero video + brand monogram, verbatim). Image actual generation 즉시 가능 / Video prompts 는 Veo3/Sora/Runway manual hand-off. frontend-design 공식 plugin의 IntelliEffect wrapper.",
+    "version": "1.8.0"
   },
   "plugins": [
     {

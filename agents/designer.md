@@ -65,6 +65,34 @@ These hold regardless of what the DSP says. The DSP can only **tighten** them, n
 
 5 카테고리 중 하나라도 매치 + 사유 없음 → 작업 미완료. fix 후 재실행.
 
+### Media asset audit (v1.8.0 추가)
+
+생성한 코드에 placeholder pattern 자리 (project tile / hero / case study cover) 가 있으면 해당 DSP 에 매핑되는 media-prompt 가 박혀있는지 확인:
+
+```bash
+# Placeholder pattern 사용 자리 색출
+grep -rnE "p\.pattern\s*===|backgroundImage:.*repeating-linear-gradient|backgroundImage:.*radial-gradient" <project>/app
+
+# DSP 의 media-prompt 매핑 카운트
+DSP=<dsp-slug>
+grep -c "<!-- media-prompt: name=" ~/.claude/prompts/design/web/${DSP}.md
+```
+
+placeholder N개 ↔ media-prompt N개 1:1 매핑 안 되면:
+- DSP 에 prompt 추가 (style descriptor 는 `_media-prompts.md` 의 카탈로그 인용)
+- 또는 Open question 으로 surface (자체 판단 금지)
+
+Image actual generation 은 사용자가 다음 명령으로 실행 (designer agent 가 직접 호출 X — 비용·시간 발생):
+
+```bash
+./scripts/codex-media-gen.sh \
+  --dsp <slug> \
+  --prompt <asset-name> \
+  --output <project>/public/<slug>/<asset>.png
+```
+
+Video prompt 는 자동 generation 미지원 — 사용자가 Veo 3 / Sora / Runway 에 수동 hand-off.
+
 ## Iteration loop (MANDATORY for renderable components)
 
 After writing the initial code, you MUST:

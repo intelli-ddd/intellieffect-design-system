@@ -183,3 +183,130 @@ GSAP showcase reference 중 다수 (Luke Baffait / Studio375 / DAVINCII) 가 her
 ### 6.4 ScrollSmoother 사용 시 mobile gate
 
 본 DSP 가 ScrollSmoother 권장하나 mobile (`matchMedia("(max-width: 768px)")`) 에서 disable 의무 — touch hijacking 차단. 이 룰은 Section 4 에 이미 박혀있으나 Category E (reduced-motion) 와 함께 검수.
+
+## 7. Media Generation Prompts
+
+본 DSP 의 hero / project tile 자리에 들어가는 image·video 자산을 위한 prompt verbatim. 공통 style descriptor 는 상위 `prompts/design/_media-prompts.md` 의 **Style A — Brutalist cinematic dark** 사용.
+
+생성 방법:
+
+```bash
+# Image (gpt-image-1, OPENAI_API_KEY 필요)
+./scripts/codex-media-gen.sh \
+  --dsp agency-portfolio \
+  --prompt cover-01 \
+  --output ../distinctive-ui-test/public/agency/cover-01.png
+
+# Video (Veo 3 / Sora — manual hand-off, script가 prompt만 echo)
+./scripts/codex-media-gen.sh --dsp agency-portfolio --prompt hero-video
+```
+
+### 7.1 Hero cinematic video (manual hand-off)
+
+<!-- media-prompt: name=hero-video type=video preset=wide-21-9 provider=veo3 -->
+
+Style: Brutalist editorial cinematic dark composition. Single coral accent light (oklch 0.68 0.22 28) sweeping across a matte-black studio environment. Subject: oversized brutalist serif glyph "S" — like a sculptural metal letterform — slowly rotating on a raw concrete plinth. Hairline lighting rim only, deep shadow occupying 80% of frame.
+
+Subject: massive sculptural typography letterform on plinth, 1 single subject only, no people.
+
+Camera: slow dolly-in from medium-wide to close-up over 8 seconds, locked horizontal, very subtle handheld micro-shake. End frame: extreme close-up of cast shadow edge on concrete.
+
+Duration: 8s loopable.
+
+Audio: silent (overlay studio room tone in post if needed).
+
+Color grade: Roma (Lubezki) — deep blacks lifted to neutral grey, single warm coral accent isolated. No teal-orange. Avoid film grain emulation.
+
+Resolution: 1080p, prepared for 21:9 letterbox crop in post.
+
+### 7.2 Project cover N°01 — Maison Bréa (Editorial)
+
+<!-- media-prompt: name=cover-01 type=image preset=cover-landscape provider=gpt-image-1 -->
+
+Style: Brutalist editorial cinematic dark composition. Raw exposed concrete shelf at slight angle, single coral accent light from top-right at 30°, deep shadow occupying lower 60% of frame. Hairline column of typography "MAISON BRÉA" subtly visible at frame edge — feeling like a contact-sheet print mark.
+
+Subject: matte-glass perfume bottle, oval architectural form, no label, single beam of light catching the glass top edge revealing internal liquid amber tone. Placed off-center (right third).
+
+Composition: 4:3 landscape, deep negative space upper left, subject occupies right third only. Brutalist hairline grid faintly visible in shadow regions.
+
+Lighting: single hard direction light, 3200K, deep shadows, no fill. Mood: post-industrial perfumer studio at night.
+
+Color: oklch(0.10 0.004 250) background dominant 85%, single accent oklch(0.68 0.22 28) coral on bottle highlight 5%, oklch(0.97 0.004 250) glass detail 10%.
+
+No people. No lifestyle props. No copy/text overlay. No watermark.
+
+### 7.3 Project cover N°02 — Plinth Records (Music · WebGL)
+
+<!-- media-prompt: name=cover-02 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Brutalist cinematic dark composition with subtle electronic music studio cue. Geometric concrete cube sculptures stacked asymmetrically — like physical record press plinths. Single deep blue rim-light edge across one cube face.
+
+Subject: 3-4 stacked concrete plinths of varying sizes, slight irregular angles. Top plinth holds a single matte black vinyl record half-visible — only the disc edge and label hole readable, no print. Mid-frame floating particles (vinyl dust) caught in side light.
+
+Composition: 4:5 portrait, deep negative space top, sculptural subject bottom 60%. Floor reflection minimal (1px hairline).
+
+Lighting: single hard side-light from camera left at 60°, deep shadows on opposite side, 3500K. Mood: a record pressing plant after hours.
+
+Color: oklch(0.10 0.004 250) deep background, oklch(0.28 0.05 250) cube shadow areas, single coral accent oklch(0.68 0.22 28) on one plinth edge highlight. Monochrome 90%.
+
+No people. No text. No genre stereotype (no headphones, no DJ equipment, no neon).
+
+### 7.4 Project cover N°03 — Ottawa & Wend (Product)
+
+<!-- media-prompt: name=cover-03 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Brutalist cinematic dark composition with product redesign cue. Single hardware product (e.g., minimal metal kitchen tool — pestle, weight, or grinder) on raw concrete surface. Single hand glimpse exit-frame holding tool edge — feeling like a product brief contact sheet.
+
+Subject: brushed steel hand tool, cold metallic surface catching directional light. Tool 70% in shadow, 30% in coral-warm light only on its profile edge. Hand at frame-right edge, fingers visible only, gesture: just-released or about-to-grasp. Single hairline cast shadow under tool.
+
+Composition: 4:5 portrait, subject lower-third, deep void upper two-thirds. Negative space deliberate for typography overlay (will be added in code, do not generate text).
+
+Lighting: single key from camera right at 45° downward, 3800K. Deep shadow side fill = none. Mood: industrial designer studio late-stage proof.
+
+Color: oklch(0.10 0.004 250) background, oklch(0.30 0.08 110) muted olive-tone shadow areas, single warm highlight oklch(0.68 0.22 28) on tool edge only.
+
+No full hand. No face. No environmental clutter. No text.
+
+### 7.5 Project cover N°04 — Foundry 7 (Brand film · Motion)
+
+<!-- media-prompt: name=cover-04 type=image preset=cover-landscape provider=gpt-image-1 -->
+
+Style: Brutalist cinematic dark composition with motion-blur cue suggesting film-still. Frame from an imagined brand film: a tall industrial space (foundry / forge), molten metal pour caught mid-frame in extreme slow motion freeze. Single figure silhouette far background, scale-establishing only.
+
+Subject: stream of molten amber light pouring from upper-left exit at -30°, captured mid-fall, droplets frozen as geometric particles. Crucible vague at top frame edge. Smoke / steam ambient in background partially obscuring far wall.
+
+Composition: 4:3 landscape, diagonal flow upper-left to lower-right. Empty negative space upper-right for typography overlay.
+
+Lighting: molten pour itself = light source (warm amber, oklch 0.78 0.20 65). Ambient surrounding light from molten reflection only. No external key light.
+
+Color: oklch(0.10 0.004 250) background space, oklch(0.78 0.20 65) molten amber primary subject, oklch(0.30 0.10 50) wall shadow reflection. High contrast.
+
+No close-up worker face. No tool detail. No safety equipment visible. No text. Brutalist mood — industrial sublime.
+
+### 7.6 Brand monogram concept (manual hand-off)
+
+<!-- media-prompt: name=brand-monogram type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: Brutalist editorial logomark exploration sheet — 4 distinct STRUKT monogram concepts on white grid, single-color (black ink on cream paper, oklch 0.96 0.012 80 background). Print-mark style, designed as if photographed from agency proof book.
+
+Subject: 4 monogram concepts arranged in 2×2 grid, each ~35% of cell space. Each concept reinterprets letters S T R U K T as geometric brutalist form: option A = stacked square monolith, B = grid-flag construction, C = single hairline tall S, D = blocky 5-glyph mono-stack.
+
+Composition: 1:1 square, 4 cells equal, hairline grid lines between cells, mono caps label below each ("Concept N°01" etc — but DO NOT generate readable text, just suggestion of label marks as small ink dashes).
+
+Lighting: flat document scan, no shadow.
+
+Color: oklch(0.96 0.012 80) cream paper, oklch(0.10 0.005 250) ink primary, no third color.
+
+No watermark. No designer signature. No corner marks beyond hairline grid.
+
+### 7.7 Pre-commit audit hook for media
+
+본 DSP 적용 시 generated code 가 placeholder pattern (CSS lines/dots/diag/block) 자리를 사용하면, designer agent 는 다음 매핑이 박혀있는지 확인:
+
+```bash
+# Project tiles 4개 → cover-01..04 prompt 4개 매핑 확인
+grep -c "<!-- media-prompt: name=cover-0" prompts/design/web/agency-portfolio.md
+# 결과 ≥ 4 (현재 4개 박혀있음)
+```
+
+placeholder 자리에 prompt 매핑 없으면 fix 또는 Open question.
