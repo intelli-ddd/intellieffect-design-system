@@ -13,9 +13,10 @@ description: >
   Override DSP 가능 — 사용자가 명시적으로 "Linear 톤", "Aesop 톤", "한국 매거진 톤" 같은 키워드 박으면 그 톤이 매칭되는 DSP 우선. 매칭되는 DSP가 없으면 가장 가까운 reference + `_template.md` 기반 inline DSP 즉석 생성.
 license: MIT
 metadata:
-  version: "1.2.0"
+  version: "1.5.0"
   author: IntelliEffect
   upstream: frontend-design@claude-plugins-official (recommended dependency)
+  vault-source: "Intellieffect-Vault 08-Resources/Marketing/랜딩페이지 레퍼런스/ (17 sites + 9-section meta analysis)"
 ---
 
 # IntelliEffect Design System
@@ -107,6 +108,92 @@ metadata:
 ## 70% Negative + 30% Positive 원칙
 
 DSP/SKILL 본문의 약 **70%가 banned 패턴 명시** (negative constraint) 이어야 LLM이 학습 median에서 벗어남. 30%만 positive spec. 사용자가 "AI 느낌 난다"고 평가하면 banned list가 부족한 것 — 더 구체적 negative constraint 추가.
+
+## Copy Voice & Headline Patterns (글로벌 — vault 메타 분석 통합)
+
+> 출처: IntelliEffect vault `08-Resources/Marketing/랜딩페이지 레퍼런스/00-패턴 요약.md` (2026-02-08, 17개 글로벌+한국 사이트 분석)
+
+### 7가지 헤드라인 공식 (UI 작업 시 1개 commit, generic SaaS 패턴 회피)
+
+| 패턴 | 공식 | 예시 |
+|---|---|---|
+| **A. 카테고리 재정의** | `The [수식어] [새 카테고리] for/to [결과]` | "Financial infrastructure to grow your revenue" (Stripe), "The First AI-Native GTM Platform" (Copy.ai) |
+| **B. 페르소나 격상** | `[제품] for [멋진 페르소나]` | "The AI for problem solvers" (Claude), "Powering the world's best product teams" (Linear) |
+| **C. 선언/단언** | `[주제]의 미래는 [우리] 입니다` | "고객상담의 미래는 AI 입니다" (채널톡), "Make anything possible, all in Figma" |
+| **D. 부정/파괴** | `Goodbye [기존]` / `No [하이프]. Just [결과].` | "Goodbye AI Copilots" (Copy.ai), "Death to boilerplate" (Retool), "No AI hype here" (Zapier) |
+| **E. 통합/단순화** | `모든 [X]를 하나로` / `More [가치]. Fewer [비용].` | "모든 HR 데이터 flex 하나로", "More productivity. Fewer tools." (Notion) |
+| **F. 행동 동사** | `[동사1] and [동사2] [목적어]` | "Build and deploy the best web experiences" (Vercel) |
+| **G. 결과 수치** | `[결과 수치] [in/by] [기간]` (sub-headline에 권장) | "Cut onboarding time by 40%" |
+
+### 8가지 카피 안티패턴 (사용 시 failure)
+
+1. ❌ **모호한 헤드라인** — "혁신적인 솔루션", "최고의 플랫폼", "Built for modern teams"
+2. ❌ **기능 나열형 features** — "실시간 분석 / 대시보드 / API 연동" 같은 모든 SaaS 공통어
+3. ❌ **익명 인용문** — "A사 마케터", "한 고객" — 실명 + 직함 + 회사 + 구체 수치 필수
+4. ❌ **"Learn more" CTA** — 행동 없음. "Get started", "Book a demo", "Start free"로
+5. ❌ **홈페이지 = 랜딩페이지 착각** — nav 가득 + 블로그 링크. 랜딩은 단일 CTA 경로
+6. ❌ **경쟁사 직접 비교** — "X보다 좋습니다" 소송 리스크. 카테고리 부정 ("Goodbye [카테고리]") 으로
+7. ❌ **너무 많은 선택지** — CTA 5개, nav 메뉴 10개. Primary 1 + Secondary 1 (최대 2)
+8. ❌ **느린 로딩** — Hero LCP > 3초. 목표 LCP ≤ 2.5s, lazy loading, 이미지 압축
+
+### 한국어 vs 영어 카피 차이 (한국 시장 DSP 강제)
+
+| 요소 | 영어 | 한국어 |
+|---|---|---|
+| 헤드라인 길이 | 5-8 words | 10-15자 |
+| 종결어미 | 없음 (명사구) | "~입니다" 선언, "~하세요" 청유, "~해보셨나요?" 질문 |
+| CTA | "Get started" | "시작하기" > "가입하기" / "무료 체험하기" > "무료 체험" / "상담 신청" > "문의하기" |
+| 수치 표현 | $1.4T, 99.999% | "80.9%", "1분 만에", "224,221개 기업" |
+| Social proof | 로고 + 이름만 | 실명 + 소속 + 직급 + 파트 (예: "윤천상, 부스터스 CX 파트 리드") |
+| 보안 인증 | SOC 2, GDPR | ISMS, ISO + 한국 인증 |
+| 어조 | Casual, Direct | 존댓말 기반, formal |
+| 대구법 | 드물게 | 핵심 기법 ("간편하게 / 정확하게") |
+| "무료" 강조 | "Free" 부차적 | "무료", "평생 무료" 매우 중요 |
+
+### 섹션 순서 BP (마케팅 페이지)
+
+**표준 구조:**
+```
+Hero → Logo Wall → Problem/Value → Solution → Features (3-6) → Customer Stories → Security/Trust → Final CTA
+```
+
+**AI 서비스 특화:**
+```
+Hero (AI 비전) → Logo Wall → AI Capabilities (데모) → Use Cases by Persona → ROI 수치 + Stories → Security/Compliance → Pricing/Demo CTA
+```
+
+**한국 시장 특화:**
+```
+Hero (한국어 선언형) → 핵심 수치 (구체적, 소수점) → 제품 기능 (시나리오형) → 고객 사례 (실명+소속+직급) → 보안 인증 (ISMS, ISO) → 가격/도입 문의 CTA
+```
+
+### CTA 위치 패턴 (모든 페이지에 적용)
+
+1. **Hero CTA** — 100% 필수, 스크롤 없이 보이는 위치
+2. **중간 CTA** — 3-4 섹션마다 반복 (Zapier/Stripe 스타일)
+3. **Final CTA** — 페이지 하단에 전용 섹션 (전체의 ~80%가 사용)
+
+### Social Proof 배치 전략
+
+- **로고월**: 5-8개 (clutter 회피), Hero 바로 아래
+- **수치형**: 다각적 (사용자 수 + 거래량 + 자동화 성과 + 만족도 + G2 ranking). 반올림 안 한 수치가 더 신뢰 (80.9% > 81%)
+- **인용문**: 이름 + 직함 + 회사 + 구체 결과 (금액 인용이 최강: "$16M saved")
+- **실시간 데이터**: Vercel AI 랭킹 / Zapier 자동화 카운터 — 활성도 증명
+
+### AI 에이전시 vs SaaS 패턴 차이 (corporate-b2b · IntelliEffect-specific)
+
+| 요소 | SaaS 제품사 | AI 에이전시 |
+|---|---|---|
+| Hero | 제품 기능/가치 | 신뢰 + 결과 + 전문성 |
+| 핵심 증거 | 무료 체험, 데모 | 포트폴리오, 고객 인용, 실적 수치 |
+| CTA | "Start free" | "상담 신청", "프로젝트 의뢰" |
+| 가격 | 공개 (투명성) | 프로젝트별 (맞춤형) |
+| 신뢰 장치 | 사용자 수, 실시간 | 고객사 로고, C레벨 인용, 인증 |
+| 경쟁 우위 | 기능/UX/가격 | 팀 전문성/프로세스/커뮤니케이션 |
+
+**에이전시 Hero 카피 안티패턴:** "혁신적인", "창의적인", "최고의" 같은 빈 수식어 — 모두 banned.
+
+**에이전시 추가 섹션:** Engagement Model (PoC → MVP → 유지보수 / Hourly · Part-time · Full-time / Dedicated · Extension · Project-based)
 
 ## DSP 카탈로그
 

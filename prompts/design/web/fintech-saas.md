@@ -4,7 +4,8 @@ type: design-system-prompt
 domain: Fintech / B2B Financial SaaS (payments infra, data analytics, risk management)
 tone: precision, trustworthy, technical, dense, monochrome-with-single-accent
 reference: Stripe (Söhne), Mercury (Arcadia), Linear (Inter Variable 510 + Berkeley Mono), Vercel (Geist), Ramp (Lausanne ss01)
-version: "2.0.0"
+version: "3.0.0"
+vault-source: "Intellieffect-Vault 08-Resources/Marketing/랜딩페이지 레퍼런스/00-패턴 요약.md"
 ---
 
 # Design System Prompt — Fintech SaaS (v2)
@@ -624,3 +625,123 @@ const shouldReduceMotion = useReducedMotion();
 > "the animation was in service of the message. It made you understand the product better. It wasn't decoration for decoration's sake."
 
 본 DSP의 motion 룰 = **purpose-bound only**. Decoration은 자른다. 모든 motion이 "이게 왜 필요한가"에 답할 수 있어야 한다.
+
+---
+
+## 6. Copy Voice & Headline (vault 메타 통합 — v1.5.0 추가)
+
+> 출처: IntelliEffect vault `08-Resources/Marketing/랜딩페이지 레퍼런스/00-패턴 요약.md`. 17개 글로벌+한국 사이트 분석 결과를 fintech-saas DSP에 verbatim 통합.
+
+fintech-saas 톤은 7가지 헤드라인 공식 중 **A (카테고리 재정의)** 또는 **F (행동 동사)** 우선. 다른 공식 (선언/부정/통합)도 사용 가능하되 commit해서 사이트 전체 일관성 유지.
+
+### 6.1 fintech-saas 권장 headline 패턴
+
+**Pattern A — 카테고리 재정의 (Stripe 패턴):**
+- "Financial infrastructure to grow your revenue" (Stripe)
+- "Payments infrastructure for the internet" (Stripe legacy)
+- "Settlement infrastructure, written in plain English." (v3 적용 예)
+
+**Pattern B — 페르소나 격상 (Linear 패턴):**
+- "Powering the world's best product teams" (Linear)
+- "The platform for treasury teams that move at startup speed"
+
+**Pattern F — 행동 동사 (Vercel 패턴):**
+- "Build and deploy the best web experiences" (Vercel)
+- "Develop. Preview. Ship." (Vercel)
+- "Reconcile. Settle. Audit."
+
+### 6.2 Banned 카피 (vault 안티패턴 8가지 — fintech-saas 강제)
+
+위 SKILL.md 글로벌 룰 적용 + fintech 도메인 특화:
+
+- ❌ "혁신적인 결제 솔루션" / "최고의 핀테크 플랫폼" — 모호한 헤드라인
+- ❌ "실시간 분석 / 대시보드 / API 연동 / 자동화" 기능 나열 — 모든 SaaS 공통어
+- ❌ "Move money, ship faster" / "Built for modern teams" / "Powerful, simple, secure" — SaaS cliché
+- ❌ "A사 CFO" 익명 인용 — 실명 + 직함 + 회사 + 금액/% 결과 필수
+- ❌ "Learn more" CTA — "Start in sandbox" / "Read the API reference" 등 행동 동사
+- ❌ "X 대비 30% 빠름" 직접 비교 — "Goodbye legacy gateways" 식 카테고리 부정으로
+
+### 6.3 fintech 도메인 cliché 추가 banned
+
+- ❌ "Banking, reimagined" / "The future of payments"
+- ❌ "Empower your business"
+- ❌ "Seamlessly integrated" — 의미 없는 형용사
+- ❌ "Enterprise-grade" without specific cert (SOC 2 Type II, PCI DSS Level 1 등 verbatim)
+- ❌ "Trusted by millions" without 회사 logo + 수치
+
+### 6.4 Korean fintech 카피 (한국 시장 deployment 시)
+
+한국 시장 fintech (토스/카카오뱅크/우리은행 OpenAPI 톤) 적용 시:
+
+- "1분 만에 정산 완료" — "~분 만에" 시간 수치화
+- "224,221개 기업이 신뢰하는 결제 인프라" — 반올림 안 한 구체 수치
+- "ISMS + ISO 27001 인증 완료" — 한국 보안 인증 우선
+- CTA: "도입 상담" > "문의하기" / "샌드박스 시작" > "무료 체험"
+- Social proof: "윤천상, 부스터스 CFO" 같은 실명 + 직급 + 회사 (익명 절대 금지)
+
+---
+
+## 7. Reference Sites (vault 자산 — 17개 큐레이션)
+
+본 DSP가 참조하는 award-grade fintech/SaaS 사이트. 각 reference의 craft signal을 시각으로 확인 후 DSP token + section ordering에 반영. vault 노트 위치: `Intellieffect-Vault/08-Resources/Marketing/랜딩페이지 레퍼런스/`.
+
+### 7.1 fintech 핵심 reference (필수 검토)
+
+| # | 회사 | URL | Vault 노트 | 핵심 craft signal |
+|---|---|---|---|---|
+| 06 | **Stripe** | https://stripe.com | `06-Stripe.md` | Söhne weight 300 large display, gradient mesh hero (purple→cream 단 verbatim mimicry 금지 — 패턴만), tabular-nums everywhere, gradient text 자제 |
+| 02 | **Linear** | https://linear.app | `02-Linear.md` | Inter Variable weight 510, Berkeley Mono pairing, keyboard shortcut display (`⌘ K`), tabular-nums sidebar, variable font hover transition |
+| 01 | **Vercel** | https://vercel.com | `01-Vercel.md` | Geist font, -2.4px tracking @48px, monochrome black/white precision, 3-layer shadow stack |
+| 14 | **Sendbird** | https://sendbird.com | `14-센드버드.md` | AI 서비스 + B2B fintech-adjacent 톤 |
+
+### 7.2 한국 시장 reference (한국 deployment 시)
+
+| # | 회사 | URL | Vault 노트 | 한국 시장 craft signal |
+|---|---|---|---|---|
+| 11 | **토스 (Toss)** | https://toss.im | `11-토스.md` | 한국어 선언형 headline, "1분 만에" 시간 수치, 구체적 % (소수점 포함), 실명 인용 |
+| 10 | **채널톡** | https://channel.io/ko | `10-채널톡.md` | "고객상담의 미래는 AI 입니다" 패턴 C 선언형, 80.9% 같은 반올림 안 한 수치 |
+| 12 | **플렉스 (flex)** | https://flex.team | `12-플렉스.md` | "모든 X를 하나로" 패턴 E 통합형, B2B HR 톤 (fintech 외 도메인이지만 한국 SaaS 카피 voice 참고) |
+
+### 7.3 AI 서비스 reference (AI fintech 시)
+
+| # | 회사 | URL | Vault 노트 | AI craft signal |
+|---|---|---|---|---|
+| 13 | **Claude (Anthropic)** | https://claude.ai | `13-Claude.md` | "The AI for problem solvers" 페르소나 격상 패턴 B, editorial typography, terracotta accent |
+| 04 | **Jasper** | https://www.jasper.ai | `04-Jasper.md` | "Put AI agents to work" 행동 동사 패턴 F |
+| 05 | **Copy.ai** | https://www.copy.ai | `05-Copy.ai.md` | "Goodbye AI Copilots" 부정 패턴 D, "$16M saved this year alone" 금액 인용 |
+
+### 7.4 보조 reference (기타 SaaS / 개발도구)
+
+| # | 회사 | URL | Vault 노트 |
+|---|---|---|---|
+| 03 | Notion | https://www.notion.com | `03-Notion.md` |
+| 07 | Zapier | https://zapier.com | `07-Zapier.md` |
+| 08 | Retool | https://retool.com | `08-Retool.md` |
+| 09 | Figma | https://www.figma.com | `09-Figma.md` |
+| 15 | Toptal | https://toptal.com | `15-Toptal.md` |
+| 16 | LeewayHertz | https://leewayhertz.com | `16-LeewayHertz.md` |
+| 17 | Upstage | https://upstage.ai | `17-Upstage.md` |
+
+### 7.5 사용 패턴
+
+작업 시작 전:
+
+1. fintech-saas 도메인 매칭되면 위 7.1 (Stripe/Linear/Vercel/Sendbird) 최소 2개 라이브 확인 — 실제 craft signal 시각화
+2. 한국 시장 작업이면 7.2 (토스/채널톡/플렉스) 추가 확인
+3. AI fintech 작업이면 7.3 (Claude/Jasper/Copy.ai) 추가 확인
+4. vault 노트 (`08-Resources/Marketing/랜딩페이지 레퍼런스/<번호-회사>.md`) Read해서 IntelliEffect 팀 자체 분석 노트 참고
+
+vault 노트는 단순 URL이 아니라 IntelliEffect 팀이 각 사이트의 craft signal을 분석한 내부 자산. DSP보다 더 상세한 도메인 지식 포함.
+
+### 7.6 Reference mimicry 금지
+
+위 reference는 craft signal **패턴 분석**용. **Verbatim mimicry는 금지**:
+
+- ❌ Stripe gradient mesh를 똑같이 복사 → AI-template
+- ❌ Linear의 정확한 `oklch(0.62 0.16 280)` violet 사용 → Linear-mimic
+- ❌ Vercel의 "Develop. Preview. Ship." 카피 동일 → 표절
+
+대신 패턴만 추출:
+- ✅ Gradient mesh **개념** 적용하되 brand color (`#1E4DB7`)로
+- ✅ Variable font hover transition **패턴** 적용
+- ✅ Triple-imperative declarative **공식** 적용 (다른 단어로)
