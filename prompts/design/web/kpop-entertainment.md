@@ -52,6 +52,24 @@ reference: HYBE, SM Entertainment, YG, JYP, Weverse, 빅히트뮤직 (지디웹 
 
 ## 3. UI Elements & Animation
 
+### 🔴 MUST USE — verbatim motion snippets (`prompts/design/_motion-snippets.md`)
+
+K-pop cinematic immersion 톤 적용 시 다음 snippet 6개 verbatim 박는 것이 의무. abstract 텍스트로만 GSAP/ScrollSmoother 언급하고 CSS keyframes 로 fallback 하는 generation 은 fail.
+
+| Snippet | 적용 위치 | 필수도 |
+|---|---|---|
+| #2 GSAP register | 모든 motion 컴포넌트 상단 import + registerPlugin + CustomEase("brand") | **MANDATORY** |
+| #3 SplitText 아티스트명/앨범명 reveal | hero `<h1>` chars stagger reveal (한글 + 영문 stacked 둘 다) | **MANDATORY** |
+| #4 ScrollTrigger pin/scrub | hero cinematic media + 타이포그래피 layered fade | **MANDATORY** |
+| #7 ScrollTrigger.batch | 디스코그래피 album card / 아티스트 roster card 의 stagger reveal | **MANDATORY** |
+| #8 Magnetic CTA | "LISTEN NOW" primary CTA (Framer Motion spring 150/15/0.1) | recommended |
+| #11 Lenis smooth scroll | 전역 inertia (mobile 에서 disable) | **MANDATORY** |
+| #12 prefers-reduced-motion | JS gate + CSS @media 양 layer + Ken Burns 즉시 fallback | **MANDATORY** |
+
+판정: 위 7 snippet 중 #2 + #3 + #4 + #7 + #11 + #12 의 6개 이상 verbatim 적용 안 되면 motion-immersive 톤 실패 — re-generate.
+
+
+
 - **Button variants:**
   - `Primary (Filled)`: accent color background, dark text (`oklch(0.08 0.004 250)`), radius `4px`, padding `16px 32px`. Hover: opacity `0.85`.
   - `Secondary (Ghost)`: 1px near-white border `30% opacity`, transparent background. Hover: border `1.0 opacity` + background `5% opacity`.
@@ -108,3 +126,192 @@ reference: HYBE, SM Entertainment, YG, JYP, Weverse, 빅히트뮤직 (지디웹 
   - Color contrast WCAG AA — dark theme accent color는 vivid라 contrast `4.5:1` 자동 충족하되, body text muted tier는 확인 필수.
   - Multi-language font fallback chain 안전하게 (한 → 영 → 일 → 중).
 - 이 Hero Section을 기준으로 전체 사이트의 cinematic immersion, photographic weight, typographic heavy treatment를 일관되고 의도적으로 확장하라. HYBE의 corporate cinematic, SM의 visual maximalism, Weverse의 fan-driven UX, 빅히트뮤직의 editorial bold treatment를 합쳐 단일 K-pop entertainment 신뢰감으로 통합한다.
+
+## 5. 구현 Guardrails (MUST READ)
+
+상위 `prompts/design/_guardrails.md` 의 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) 모두 적용. 본 DSP 특이 trap:
+
+### 5.1 SplitText + 한글 stacked treatment
+
+본 DSP 가 한글 아티스트명 Display Heavy + 영문 romanization stacked 의무. SplitText 의 `type: "chars"` 적용 시 한글 음절이 jamo 단위로 분해될 가능성 — `type: "words,lines"` 로 설정해 단어 단위 stagger 권장. clip-path 룰 (Category A) 동일 적용.
+
+### 5.2 ScrollSmoother (Lenis) + ScrollTrigger 동기화
+
+본 DSP 가 Lenis 권장. ScrollTrigger 와 동시 사용 시 raf 안에서 `ScrollTrigger.update()` 호출 필수. 단순 import 만으로는 동기화 안 됨 — snippet #11 본문에 박힌 raf 패턴 verbatim 적용.
+
+### 5.3 Album art radius 0 + sacred geometry
+
+`<Image>` 사용 시 radius 0 강제. Tailwind `rounded-*` 클래스 또는 inline `borderRadius` 명시 금지. Album cover hover 시 scale 1.0 → 1.03 (`400ms ease-out`) 만 허용 — radius 또는 aspect ratio 변경 시 fail.
+
+## 6. Media Generation Prompts
+
+본 DSP 의 hero artist photography / artist roster / album cover 자리에 들어가는 image 자산. 공통 style descriptor 는 상위 `_media-prompts.md` 의 **Style D — K-Pop entertainment vibrant** 사용.
+
+생성 방법:
+
+```bash
+# 전제: codex login 완료
+./scripts/codex-media-gen.sh \
+  --dsp kpop-entertainment \
+  --prompt hero-artist \
+  --output ../distinctive-ui-test/public/kpop/hero-artist.png \
+  --size 1536x1024
+```
+
+### 6.1 Hero artist photography — cinematic group portrait
+
+<!-- media-prompt: name=hero-artist type=image preset=hero-wide provider=gpt-image-1 -->
+
+Style: K-pop entertainment cinematic dark-theme editorial photography. Studio-controlled stage performance lighting OR moody high-fashion editorial shoot. Mood: artist-tier presence, intentional, motion-blur on extremities allowed, choreography-implied mid-frame.
+
+Subject: 4-member K-pop group (mixed gender or all-same), early 20s, styled in coordinated high-fashion looks (oversized blazers, layered streetwear, leather, sheer fabric — NOT identical uniforms). Members arranged in INTENTIONAL ASYMMETRY — one slightly forward, two mid-plane, one slightly back. Faces partially turned, none looking directly into camera (avoid stiff group shot). Three-quarter view dominant. Hair styled with movement (gel-set, swept, mid-motion).
+
+Composition: 16:9 landscape, cinematic full-bleed. Subjects occupy lower 60-70% of frame, dark cinematic void upper 30-40% (typography overlay zone). Single accent color spill from off-frame side light — coral oklch(0.72 0.22 18) edge-lighting member silhouettes from camera-right.
+
+Lighting: dramatic stage rim-light from upper-right at 30°, deep cast shadow on opposite side. Color temperature mixed: 3200K coral warm side + 5500K cool fill. Edge separation light on hair. NO flat softbox studio. NO beauty dish glamour. Mood: backstage moments before show / editorial cover.
+
+Color: oklch(0.08 0.004 250) deep cool-tinted black background dominant 50%, oklch(0.72 0.22 18) coral accent edge light 10%, mid-tone fashion fabric 30%, skin tone warm natural 10%. Strictly monochrome dark + single coral accent — NO rainbow gradient, NO multi-color stage wash.
+
+NO direct eye contact. NO over-saturated stage filter. NO TikTok lens flare. NO group "peace sign" gesture. NO fan-cam shimmer particle. NO cartoonish styling. Single intentional moment — pre-show or post-shoot editorial.
+
+### 6.2 Album cover — square sacred geometry (1:1)
+
+<!-- media-prompt: name=album-cover-01 type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: K-pop album art editorial cover — high-concept, minimalist, single subject. Mood: 1st full album debut statement, deliberate, mysterious.
+
+Subject: single sculptural object on raw concrete plinth — choice between (a) cracked geode revealing iridescent coral interior, (b) twisted metallic ribbon catching coral edge light, or (c) folded silk drape with coral underlight glow. NO people, NO members visible. Object 50% of frame, anchored slightly right-of-center.
+
+Composition: 1:1 square, hairline grid faintly visible in shadow regions. Subject mid-frame, surrounded by deep void. Subtle vignette corner darkening.
+
+Lighting: single hard coral key light from upper-right at 30° + cool blue fill from camera-left. Edge separation. 3200K accent.
+
+Color: oklch(0.08 0.004 250) background dominant, oklch(0.72 0.22 18) coral accent on subject highlight, single cool blue oklch(0.50 0.04 250) shadow fill. Strictly dark monochrome + single accent.
+
+No text. No artist name. No album title (will be overlaid in code). No QR codes. No watermark. Sacred minimalism.
+
+### 6.3 Album cover — alt concept (1:1)
+
+<!-- media-prompt: name=album-cover-02 type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: K-pop album art — alternate concept, complementary to cover-01. Mood: comeback single, softer texture.
+
+Subject: macro close-up of fabric texture catching directional light — silk velvet OR raw linen OR cracked porcelain surface — abstract enough that interpretation is open. Single coral light beam crosses upper-left to lower-right diagonal.
+
+Composition: 1:1 square. Abstract texture fills frame. Single hard light beam as composition anchor.
+
+Lighting: single hard coral light, dramatic falloff into deep shadow on opposite half. 3500K accent.
+
+Color: deep cool-tinted black dominant, coral accent light beam mid-frame, fabric mid-tone natural. Monochrome + single accent.
+
+No people. No text. No identifiable brand or logo. Pure abstract material study.
+
+### 6.4 Artist roster portrait — member 01 (3:4 portrait)
+
+<!-- media-prompt: name=artist-portrait-01 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: K-pop artist solo portrait — editorial cover quality, dark cinematic, single artist roster card asset. Mood: artist-tier presence, intentional gaze NOT into camera.
+
+Subject: single K-pop artist (early 20s), three-quarter view looking off-frame to camera-left, hand partially up to face or in hair. High-fashion solo styling — oversized blazer with coral accent (single coral element: pocket square, tie, edge stitching). Hair styled with movement.
+
+Composition: 3:4 portrait, subject centered, full-bleed cinematic dark void around. Single coral accent (clothing detail) catches edge light.
+
+Lighting: single hard rim light from upper-right at 45°, deep shadow opposite. 3200K warm accent + cool fill. Mood: editorial cover.
+
+Color: oklch(0.08 0.004 250) deep cool-tinted black dominant 70%, oklch(0.72 0.22 18) coral accent 5% (clothing detail only), skin tone warm natural 25%.
+
+NO direct eye contact. NO stage backdrop. NO microphone or instrument. NO branded apparel logos. Single subject, deep void, editorial intentionality.
+
+### 6.5 Artist roster portrait — member 02 (3:4 portrait)
+
+<!-- media-prompt: name=artist-portrait-02 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: K-pop artist solo portrait — alternate member, same series as portrait-01. Visual continuity with member 01 but distinct subject.
+
+Subject: single K-pop artist (early 20s, different from portrait-01), profile view OR three-quarter facing opposite direction (camera-right). Different styling but same coral accent element (single coral detail). Different hair styling (longer, swept differently).
+
+Composition: 3:4 portrait, subject left-third of frame to balance opposite of portrait-01.
+
+Lighting: matching rim light direction reversed (upper-left at 45°). 3200K coral + cool fill.
+
+Color: matching palette — dark + coral accent + warm skin. Pair-able with portrait-01 in side-by-side layout.
+
+NO direct eye contact. Same banned list as 6.4.
+
+### 6.6 Album cover — repackage / pre-release (1:1)
+
+<!-- media-prompt: name=album-cover-03 type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: K-pop album art — sister concept to 6.2/6.3. Mood: pre-release teaser / repackage edition, more graphic and bold than 6.2's mineral focus.
+
+Subject: extreme close-up of a single sharp metal blade or geometric chrome ribbon partially submerged in glossy black liquid, coral light reflection on the metal surface. Or alternative: half-broken porcelain ceramic shard catching coral edge light at its fractured edge. NO people, NO members visible.
+
+Composition: 1:1 square, subject centered-bottom, deep negative space upper half. Single bright accent point at the metal edge or shard fracture line.
+
+Lighting: single hard coral key from upper-right at 30°, deep falloff. 3200K accent.
+
+Color: oklch(0.08 0.004 250) deep dominant 65%, oklch(0.72 0.22 18) coral hot spot 5%, cool oklch(0.50 0.04 250) reflection 30%. Strictly dark monochrome + single coral.
+
+No text, no artist name, no album title, no QR codes, no watermark.
+
+### 6.7 Album cover — special edition / live recording (1:1)
+
+<!-- media-prompt: name=album-cover-04 type=image preset=cover-square provider=gpt-image-1 -->
+
+Style: K-pop album art — live recording or special edition, more performative cue than 6.2 (mineral) or 6.6 (metal). Mood: stadium-tier energy bottled as abstract object.
+
+Subject: single rotating microphone OR vinyl record edge OR coiled cable on dark concrete, captured mid-motion blur on one element, sharp on another. Coral spotlight from above-right. NO people, NO band logo, NO concert stage backdrop.
+
+Composition: 1:1 square, subject diagonal lower-left to upper-right, sharp at center, motion blur at edges. Single coral hot spot center-mass.
+
+Lighting: single dramatic coral spotlight from upper-right, deep cast shadow. 3500K accent.
+
+Color: oklch(0.08 0.004 250) deep dominant, oklch(0.72 0.22 18) coral accent on motion blur trail, cool reflection. Monochrome + single accent.
+
+No text, no logo, no readable brand on equipment. Single abstract performance moment frozen.
+
+### 6.8 Artist roster portrait — member 03 (3:4 portrait)
+
+<!-- media-prompt: name=artist-portrait-03 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: K-pop artist solo portrait — third member of roster series. Visual continuity with 6.4/6.5 but distinct subject pose and styling.
+
+Subject: single K-pop artist (early 20s, different from portrait-01 and portrait-02), seated low or leaning against frame edge. Hand visible holding something abstract (could be a ribbon, a chain, fabric) — implies introspective pause between performances. Same coral accent element (single coral detail in styling — e.g., earring, cuff stitching, ribbon). Shorter hairstyle or different parting.
+
+Composition: 3:4 portrait, subject center-frame or slightly right, full-bleed cinematic dark void around. Lower-third dominant.
+
+Lighting: single hard rim light from camera-left at 60° (different angle from 6.4/6.5). Deep shadow opposite. 3200K warm coral + cool fill.
+
+Color: matching palette — dark dominant, coral accent (clothing detail), warm skin tone.
+
+NO direct eye contact. NO microphone or instrument. NO branded apparel logos. NO sunglasses. Single subject, deep void, editorial intentionality.
+
+### 6.9 Artist roster portrait — member 04 (3:4 portrait)
+
+<!-- media-prompt: name=artist-portrait-04 type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: K-pop artist solo portrait — fourth member of roster series. Completes the 4-member set.
+
+Subject: single K-pop artist (early 20s, different from portraits 01-03), looking upward at slight angle (NOT into camera), strong contrast lighting on jawline. Hands in pockets or arms crossed in considered pose. Distinct styling — leather jacket with single coral lining or coral lining visible at collar/cuff. Mid-length hair styled with movement.
+
+Composition: 3:4 portrait, subject left third of frame OR head slightly tilted creating dynamic diagonal. Full-bleed cinematic dark void.
+
+Lighting: hard top-down rim light from above + coral accent from camera-right at 75° creating triangular jaw highlight. Deep shadow underneath. 3000K coral + cool fill.
+
+Color: matching palette consistent with 6.4/6.5/6.8 — dark dominant, coral accent, warm skin.
+
+NO direct eye contact. NO accessories with brand logos. Single subject, deep void, editorial.
+
+### 6.10 Pre-commit audit hook for media
+
+본 DSP 적용 시 generated code 가 external placeholder image (Unsplash / picsum 등) 또는 generic stock concert imagery 를 사용하면, designer agent 는 매핑되는 media-prompt 가 박혀있는지 확인:
+
+```bash
+# External placeholder + 외부 stock 색출
+grep -rnE 'unsplash\.com|picsum\.photos|stock|getty|shutterstock' <project>/app
+
+# DSP 의 media-prompt 매핑 카운트 (≥ 5 기대: hero-artist + album x2 + portrait x2)
+grep -c "<!-- media-prompt: name=" prompts/design/web/kpop-entertainment.md
+```
+
+외부 stock 사용 자리 N개 → media-prompt N개 매핑 ≥ 1:1. 부족하면 DSP 에 prompt 추가 또는 Open question.
