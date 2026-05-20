@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "IntelliEffect 팀 design system — 21 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent + multi-IDE support (Claude Code / Codex CLI / Cursor / Aider) + 17개 랜딩페이지 reference (vault 메타 통합) + Section 5 Interactive motion layer + GSAP plugin 카탈로그 + anime.js v4 + agency-portfolio DSP. v1.7.0 — Implementation Guardrails 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) verbatim 코드 + grep audit (prompts/design/_guardrails.md). v1.8.1 — Media Generation Prompts 카탈로그 (prompts/design/_media-prompts.md) + scripts/codex-media-gen.sh (Codex CLI imagegen skill 호출, codex login OAuth 사용, OPENAI_API_KEY 불필요) + agency-portfolio DSP Section 7 (4 project cover image + 1 hero video + brand monogram, verbatim). Image actual generation 즉시 가능 (~/.codex/generated_images 경유 후 --output 경로 copy) / Video prompts 는 Veo3/Sora/Runway manual hand-off. frontend-design 공식 plugin의 IntelliEffect wrapper.",
-    "version": "1.9.2"
+    "version": "1.9.3"
   },
   "plugins": [
     {
