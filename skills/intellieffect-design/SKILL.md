@@ -13,7 +13,7 @@ description: >
   Override DSP 가능 — 사용자가 명시적으로 "Linear 톤", "Aesop 톤", "한국 매거진 톤" 같은 키워드 박으면 그 톤이 매칭되는 DSP 우선. 매칭되는 DSP가 없으면 가장 가까운 reference + `_template.md` 기반 inline DSP 즉석 생성.
 license: MIT
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
   author: IntelliEffect
   upstream: frontend-design@claude-plugins-official (recommended dependency)
   vault-source: "Intellieffect-Vault 08-Resources/Marketing/랜딩페이지 레퍼런스/ (17 sites + 9-section meta analysis)"
@@ -108,6 +108,57 @@ metadata:
 ## 70% Negative + 30% Positive 원칙
 
 DSP/SKILL 본문의 약 **70%가 banned 패턴 명시** (negative constraint) 이어야 LLM이 학습 median에서 벗어남. 30%만 positive spec. 사용자가 "AI 느낌 난다"고 평가하면 banned list가 부족한 것 — 더 구체적 negative constraint 추가.
+
+## Motion Library 카탈로그 (글로벌 — v1.6.0 확장)
+
+다음 라이브러리를 작업별로 분담. **anime.js + GSAP plugins 추가** (v1.6.0):
+
+### GSAP plugin 카탈로그 (gsap.com/showcase 분석)
+
+GSAP showcase의 award-winning 사이트들이 공통 사용하는 plugin:
+
+| Plugin | 용도 | 사용 사례 |
+|---|---|---|
+| **ScrollTrigger** | scroll-driven trigger | 모든 award 사이트 — pin/scrub/timeline 연동 |
+| **SplitText** | character / word / line split | 거의 모든 hero text reveal (3.13+ free) |
+| **DrawSVG** | SVG path stroke animation 0→100% | DAVINCII, Arijaya Putra — vector logo reveal |
+| **Flip** | element layout transition (FLIP technique) | ADA (thefirstthelast.agency) — layout swap |
+| **CustomEase** | 정교한 cubic-bezier 또는 SVG-based easing | DAVINCII — brand-specific motion personality |
+| **Draggable + Inertia** | drag interaction with physics | Hypefluency — interactive draggable cards |
+| **MotionPath** | element를 SVG path 따라 이동 | Arijaya Putra — character가 path 따라 움직임 |
+| **ScrollSmoother** | smooth scroll (Lenis 대안) | Škoda Vision Concept — single-page cinematic |
+
+**GSAP plugin 사용 시 주의:** ScrollSmoother는 mobile에서 hijacking 위험 — Lenis와 동일하게 mobile auto-disable 권장.
+
+### anime.js v4 (NEW)
+
+15KB gzipped, MIT 라이센스, animejs.com 자체 데모. GSAP와 역할 분담:
+- **anime.js**: SVG vector animation, lightweight timeline, financial visualization (transaction flow / settlement / chart morph), `svg.morphTo()`, `svg.createDrawable()`
+- **GSAP**: scroll-triggered, complex timeline, SplitText, layout transition (Flip)
+
+### Award-grade GSAP showcase reference (11개)
+
+| Site | URL | 사용 plugin |
+|---|---|---|
+| Luke Baffait | https://www.lukebaffait.fr/ | ScrollTrigger |
+| Apex | https://apex-psi-indol.vercel.app/ | SplitText |
+| Škoda Vision Concept | https://vision.doanbao.com/ | ScrollTrigger + ScrollSmoother |
+| Studio375 | https://375.studio/ | ScrollTrigger + SplitText |
+| Maxima Therapy | https://maximatherapy.com/ | ScrollTrigger |
+| Hypefluency | https://hypefluency.com/ | ScrollTrigger + Draggable + SplitText + Inertia |
+| Arijaya Putra | https://arijayaputra.xyz/ | DrawSVG + MotionPath |
+| Victor Furuya '26 | https://victorfuruya.com/ | ScrollTrigger + SplitText |
+| DAVINCII | https://davincii.com/ | ScrollTrigger + DrawSVG + SplitText + CustomEase + ScrollTo |
+| ADA | https://thefirstthelast.agency/ | ScrollTrigger + Flip + SplitText |
+| Pacôme Pertant | http://pacomepertant.com/ | ScrollTrigger + SplitText |
+
+위 사이트는 대부분 **portfolio / creative agency / branded campaign** 톤 — fintech-saas의 정밀 monochrome 톤과 다른 영역. 별도 DSP `agency-portfolio.md` (v1.6.0)에서 활용. fintech-saas 등 정밀 DSP는 이 사이트들의 plugin 사용 패턴만 참고하되 visual maximalism은 회피.
+
+### anime.js / GSAP showcase mimicry 금지
+
+- ❌ animejs.com의 거대한 multi-color SVG hero를 fintech-saas에 복사 → 톤 충돌
+- ❌ DAVINCII의 dark brutalist 톤을 wellness-platform에 복사 → 톤 충돌
+- ✅ **plugin 사용 패턴만 추출** — DrawSVG concept을 fintech의 transaction path animation에, SplitText를 모든 hero headline reveal에, Flip을 dashboard view 전환에
 
 ## Copy Voice & Headline Patterns (글로벌 — vault 메타 분석 통합)
 

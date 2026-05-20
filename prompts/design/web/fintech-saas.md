@@ -346,10 +346,16 @@ Command-driven action에 강제 — 검색·shortcuts·dialog:
 |---|---|---|
 | Component lifecycle / gesture / layout | **Framer Motion (motion)** | `useScroll`, `useTransform`, `AnimatePresence`, `layoutId`, `whileTap` |
 | Scroll-triggered / timeline / SplitText | **GSAP** | `ScrollTrigger pin/scrub`, `SplitText chars/lines`, complex sequencing |
+| **SVG vector animation / lightweight timeline / path morph** | **anime.js v4 (NEW)** | `animate()`, `createTimeline()`, `svg.morphTo()`, `svg.createDrawable()` — 15KB gzipped, MIT, animejs.com 자체 데모 |
 | Smooth scroll | **Lenis** | root level 1회 init, mobile auto-disable |
 | Page navigation | **View Transitions API** (Next.js 15+ `unstable_ViewTransition`) | shared element morph, route crossfade |
 | Microinteractions | **CSS-only** | `font-variation-settings` transition, `:hover`, `@keyframes` |
 | Avoid | **R3F / Rive / Lottie** | bundle 비용 대비 ROI 낮음. Marketing 페이지에 박지 말 것 (product UI animation은 별개) |
+
+**anime.js v4 vs GSAP 분담:**
+- GSAP: scroll-triggered, SplitText, 복잡한 stagger timeline, ScrollTrigger pin/scrub
+- anime.js: **SVG path morph / draw**, vector animation, financial visualization (transaction flow / settlement timeline / chart morph), 가벼운 page-load 인터랙션
+- 둘 다 사용 OK — 역할 분리
 
 ### 5.2 AI-template motion fingerprint (필수 회피 — failure 사유)
 
@@ -578,9 +584,42 @@ observer.observe(canvas);
 ```
 Library: **vanilla JS (kevinhufnagl/thelevicole stripe-gradient)**. **R3F 금지** — bundle 200KB+ ROI 낮음.
 
-#### G. Live data / pulse (1개)
+#### H. SVG vector animation (anime.js v4 — NEW)
 
-**G1. Live status indicator (실시간 가격·status) 2s breathing pulse**
+**H1. Hero visual hook은 interactive SVG visualization** (animejs.com 패턴 — fintech financial visualization)
+```javascript
+import { animate, createTimeline, svg } from 'animejs';
+
+// transaction flow / settlement timeline / chart morph
+const tl = createTimeline({ loop: true });
+tl.add(svg.createDrawable('.path-1'), { draw: '0 1', duration: 1500 })
+  .add(svg.createDrawable('.path-2'), { draw: '0 1', duration: 1500 }, '-=500');
+```
+Library: **anime.js v4** (15KB gzipped, MIT). animejs.com 자체 사이트가 이 패턴 데모 — 거대한 interactive SVG hero. fintech 톤 적용 시 brand color 안에서만 (multi-color rainbow 금지).
+
+**H2. Code snippet as Primary CTA** (animejs.com 패턴)
+```html
+<button class="code-cta">
+  <span class="mono">npm i @ledger/payments</span>
+  <svg><use href="#copy-icon" /></svg>
+</button>
+```
+- Mono font + radius 8-10px + hairline border + click-to-copy 인터랙션
+- 또는 `gh repo clone ...` / `curl ... | bash` 같은 install command를 CTA로
+- Linear/Stripe Docs preview처럼 product 자체가 CLI/API라는 시그널
+
+**H3. SVG path morph for product diagram** (fintech 패턴: account A → settlement → account B)
+```javascript
+animate('.svg-path', {
+  d: ['M0,50 L100,50', 'M0,50 C30,20 70,80 100,50'],
+  duration: 2000, loop: true, alternate: true, ease: 'inOutQuad'
+});
+```
+Library: **anime.js v4 svg.morphTo()**.
+
+#### I. Live data / pulse (1개)
+
+**I1. Live status indicator (실시간 가격·status) 2s breathing pulse**
 ```css
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }

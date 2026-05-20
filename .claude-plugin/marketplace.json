@@ -5,8 +5,8 @@
     "email": "qweehd1@gmail.com"
   },
   "metadata": {
-    "description": "IntelliEffect 팀 design system — 20 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent + multi-IDE support (Claude Code / Codex CLI / Cursor / Aider) + 17개 랜딩페이지 reference (vault 메타 통합) + Section 5 Interactive motion layer. 지디웹 한국 시장 reference 통합. frontend-design 공식 plugin의 IntelliEffect wrapper.",
-    "version": "1.5.0"
+    "description": "IntelliEffect 팀 design system — 21 도메인별 DSP (Design System Prompt) 카탈로그 + designer agent + multi-IDE support (Claude Code / Codex CLI / Cursor / Aider) + 17개 랜딩페이지 reference (vault 메타 통합) + Section 5 Interactive motion layer + GSAP plugin 카탈로그 (DrawSVG/Flip/CustomEase/Draggable+Inertia/MotionPath) + anime.js v4 + 새 agency-portfolio DSP (GSAP showcase 11개 award-winning 사이트). 지디웹 한국 시장 reference + animejs.com + gsap.com/showcase 통합. frontend-design 공식 plugin의 IntelliEffect wrapper.",
+    "version": "1.6.0"
   },
   "plugins": [
     {
