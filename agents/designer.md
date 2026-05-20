@@ -51,6 +51,7 @@ These hold regardless of what the DSP says. The DSP can only **tighten** them, n
 | C. Motion stacking (anime.js + GSAP rotation) | `_guardrails.md` Category C audit 명령 — 공존 시 stack 위치 수동 검증 |
 | D. transformOrigin 누락 | `grep -rnE "gsap\.(to\|fromTo)\([^)]*rotation" <project>/app -A 5` 후 ±5 줄 내 `transformOrigin` 확인 |
 | E. prefers-reduced-motion 한쪽 누락 | `grep -lE "useReducedMotion\(\)" <project>/app \| xargs grep -L "prefers-reduced-motion"` |
+| **F. Motion stack abstract fallback** (v1.9.0) | DSP 가 motion-heavy 면 (agency-portfolio / editorial-magazine / kpop-entertainment 등) 생성 코드에 `useGSAP`/`ScrollTrigger`/`SplitText`/`DrawSVG`/`CustomEase` 실 사용 grep. 0매치 + `@keyframes` 만 있으면 abstract fallback — fail. `_motion-snippets.md` verbatim 박을 것. |
 
 작업 완료 보고 시 다음 형식:
 
@@ -64,6 +65,22 @@ These hold regardless of what the DSP says. The DSP can only **tighten** them, n
 ```
 
 5 카테고리 중 하나라도 매치 + 사유 없음 → 작업 미완료. fix 후 재실행.
+
+v1.9.0 Category F (motion stack fallback) 추가 검증 명령:
+
+```bash
+PROJECT_DIR=<project>/app
+# motion-heavy DSP 라면 GSAP/Framer 실사용 grep
+GSAP_HITS=$(grep -rcE "useGSAP|gsap\.(to|from|fromTo)|ScrollTrigger|SplitText|DrawSVG|CustomEase" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+FRAMER_HITS=$(grep -rcE "useMotionValue|whileTap|motion\\.[a-z]" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+ANIME_HITS=$(grep -rcE "createTimeline|svg\.morphTo|from 'animejs'" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+KEYFRAMES_ONLY=$(grep -rc "@keyframes" "$PROJECT_DIR" | awk -F: '{s+=$2} END {print s+0}')
+
+# 판정: motion-heavy DSP 적용 결과 GSAP+Framer+Anime 모두 0 + keyframes만 등장 → FAIL
+if [[ $GSAP_HITS -eq 0 && $FRAMER_HITS -eq 0 && $ANIME_HITS -eq 0 && $KEYFRAMES_ONLY -gt 0 ]]; then
+  echo "❌ FAIL: motion stack abstract fallback detected. Apply _motion-snippets.md verbatim."
+fi
+```
 
 ### Media asset audit (v1.8.0 추가)
 

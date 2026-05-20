@@ -85,6 +85,26 @@ reference: |
 
 라이브러리 stack 의무: **GSAP + ScrollTrigger + SplitText + DrawSVG + Flip + CustomEase + ScrollSmoother**. 선택: Draggable + InertiaPlugin (Option C), MotionPathPlugin, ScrollToPlugin.
 
+### 🔴 MUST USE — verbatim motion snippets (`prompts/design/_motion-snippets.md`)
+
+본 DSP 적용 시 다음 snippet 9개 verbatim 박는 것이 의무. **abstract 텍스트로만 GSAP 언급하고 실제로는 CSS keyframes 로 fallback 하는 generation 은 fail.**
+
+| Snippet | 적용 위치 | 필수도 |
+|---|---|---|
+| #2 GSAP register | 모든 motion 컴포넌트 상단 import + registerPlugin + CustomEase("brand") | **MANDATORY** |
+| #3 SplitText hero | hero `<h1>` chars stagger reveal | **MANDATORY** |
+| #4 ScrollTrigger pin/scrub | hero 의 3-stage timeline (meta parallax + headline fade + scale) | **MANDATORY** |
+| #5 Scroll progress bar | document body 상단 fixed `<div id="scroll-progress">` | **MANDATORY** |
+| #6 DrawSVG monogram | brand logo / signature 의 SVG path stroke draw | **MANDATORY** |
+| #7 ScrollTrigger.batch | project tile / case study list 의 stagger reveal + parallax inner image | **MANDATORY** |
+| #8 Magnetic CTA | primary CTA 1개만 (Framer Motion spring 150/15/0.1) | **MANDATORY** |
+| #10 anime.js morph | corner decorative accent (square → diamond → triangle cycle) | recommended |
+| #12 prefers-reduced-motion | JS gate + CSS @media 양 layer | **MANDATORY** |
+
+**판정 룰**: 위 9 snippet 중 #2 + #3 + #4 + #5 + #6 + #7 + #8 + #12 의 7개 이상 verbatim 적용 안 되면 motion-rich 톤 실패 — re-generate.
+
+### 필수 motion spec (옵션 무관 — 최소 4가지 적용)
+
 ### 필수 motion spec (옵션 무관 — 최소 4가지 적용)
 
 - **SplitText hero headline** — chars 또는 words stagger reveal on load. Stagger `0.02-0.04s`, duration `0.8-1.2s`, ease `CustomEase.create("agency", "0.22, 1, 0.36, 1")`.

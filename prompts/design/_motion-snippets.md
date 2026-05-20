@@ -1,0 +1,705 @@
+---
+name: motion-snippets
+description: 모든 motion-heavy DSP가 reference하는 verbatim TypeScript/React 코드 snippet 카탈로그. abstract "GSAP 사용" 표현으로는 LLM 이 CSS keyframes fallback 하므로, 실제 production code를 박아 LLM이 그대로 copy-paste 하도록 강제.
+version: v1.9.0
+---
+
+# Motion Implementation Snippets
+
+GSAP / anime.js v4 / Framer Motion / Lenis 의 production-grade verbatim code. DSP body 에서 "ScrollTrigger pin" 같은 텍스트가 등장하면 그 옆에 본 카탈로그의 snippet 번호를 reference (`→ snippet #4 verbatim 적용`).
+
+각 snippet 은:
+- 즉시 copy-paste 가능한 완성 TypeScript
+- `_guardrails.md` 5 카테고리 (italic clip / useGSAP scope / motion stacking / transformOrigin / reduced-motion) 통과
+- 마커 `<!-- motion-snippet: name=<id> stack=<gsap|anime|framer|lenis> -->` 로 grep audit 가능
+
+---
+
+## Snippet 1 — Package setup (모든 motion-heavy 프로젝트 공통)
+
+<!-- motion-snippet: name=package-setup stack=mixed -->
+
+```bash
+# 의무 (모든 agency-portfolio / editorial / cinematic 톤)
+npm install gsap @gsap/react
+# Framer Motion 도 magnetic CTA / reduced-motion gate 용
+npm install motion
+# anime.js v4 (path morph 등)
+npm install animejs
+# 선택: 전역 inertia scroll
+npm install lenis
+```
+
+**중요**: GSAP 3.13+ 부터 ScrollTrigger / SplitText / DrawSVG / Flip / CustomEase / MotionPath / ScrollSmoother 등 club plugin 이 **무료**. 별도 패키지 설치 불필요 — 모두 `gsap/<PluginName>` 로 import.
+
+---
+
+## Snippet 2 — GSAP plugin register (한 곳에서 등록)
+
+<!-- motion-snippet: name=gsap-register stack=gsap -->
+
+```tsx
+"use client";
+
+import { gsap } from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { SplitText } from "gsap/SplitText";
+import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
+import { CustomEase } from "gsap/CustomEase";
+import { Flip } from "gsap/Flip";
+
+// 한 번만 등록 (SSR 안전 가드)
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(
+    useGSAP,
+    ScrollTrigger,
+    SplitText,
+    DrawSVGPlugin,
+    CustomEase,
+    Flip,
+  );
+  // Brand signature curve — 모든 reveal 에 재사용
+  if (!CustomEase.get("brand")) {
+    CustomEase.create("brand", "M0,0 C0.86,0 0.07,1 1,1");
+  }
+}
+```
+
+**MUST USE**: 모든 hero / page 컴포넌트 상단에 박아라. `import` 없이 `gsap.to(...)` 호출하면 동작 안 함.
+
+---
+
+## Snippet 3 — SplitText hero reveal (chars stagger slide-up)
+
+<!-- motion-snippet: name=splittext-hero stack=gsap -->
+
+```tsx
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { SplitText } from "gsap/SplitText";
+import { useReducedMotion } from "motion/react";
+
+// 부모 컴포넌트 어딘가:
+const heroRef = useRef<HTMLDivElement | null>(null);
+const headlineRef = useRef<HTMLHeadingElement | null>(null);
+const reduce = useReducedMotion();
+
+useGSAP(
+  () => {
+    if (reduce) return;  // Category E — JS gate
+
+    if (!headlineRef.current) return;
+    const split = new SplitText(headlineRef.current, {
+      type: "chars,words",
+      charsClass: "split-char",
+      wordsClass: "split-word",
+    });
+
+    gsap.set(split.chars, { yPercent: 100, opacity: 0 });
+    gsap.to(split.chars, {
+      yPercent: 0,
+      opacity: 1,
+      duration: 1.0,
+      stagger: 0.030,
+      ease: "brand",  // CustomEase 등록된 브랜드 곡선
+      delay: 0.15,
+    });
+
+    return () => {
+      split.revert();  // cleanup (HMR 안전)
+    };
+  },
+  { scope: heroRef, dependencies: [reduce] },
+);
+
+// JSX:
+<section ref={heroRef}>
+  <h1 ref={headlineRef} className="hero-headline">
+    Selected work, built to outlast.
+  </h1>
+</section>
+```
+
+**Category A guardrail** — `.split-word` CSS 는 반드시 `clip-path` (overflow:hidden 금지):
+
+```css
+.split-word {
+  display: inline-block;
+  line-height: 0.95;
+  padding-bottom: 0.05em;
+  clip-path: inset(-0.15em -0.4em 0 -0.4em);
+}
+.split-char {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+```
+
+---
+
+## Snippet 4 — ScrollTrigger pin/scrub hero (multi-stage timeline)
+
+<!-- motion-snippet: name=scrolltrigger-pin stack=gsap -->
+
+```tsx
+"use client";
+
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+const heroRef = useRef<HTMLDivElement | null>(null);
+const reduce = useReducedMotion();
+
+useGSAP(
+  () => {
+    if (reduce) return;
+    if (!heroRef.current) return;
+
+    // Multi-stage timeline tied to scroll. scrub:1 으로 부드러운 스크롤-바인딩.
+    const heroTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: heroRef.current,
+        start: "top top",
+        end: "+=120%",        // 핀 구간 = viewport 1.2배
+        scrub: 1,             // 1초 ease 보간
+        pin: true,
+        pinSpacing: true,
+        invalidateOnRefresh: true,
+      },
+    });
+
+    // Stage 1 (0 → 30%): 메타 블록 위로 빠르게 (parallax)
+    heroTl.to(".hero-meta-line", { y: -120, ease: "none", duration: 3 }, 0);
+
+    // Stage 2 (20 → 60%): 헤드라인 살짝 위 + scale 축소
+    heroTl.to(
+      ".hero-headline",
+      { y: -60, scale: 0.97, opacity: 0.4, ease: "none", duration: 4 },
+      2,
+    );
+
+    // Stage 3 (40 → 100%): 전체 hero opacity 페이드아웃
+    heroTl.fromTo(
+      heroRef.current,
+      { opacity: 1 },
+      { opacity: 0.35, ease: "none", duration: 6 },
+      4,
+    );
+  },
+  { scope: heroRef, dependencies: [reduce] },
+);
+```
+
+**Category B guardrail** — `.hero-meta-line` 가 `heroRef` 안에 있으면 string selector 가능. **외부 element** 면 `document.querySelector` 로 ref 전달 필수.
+
+---
+
+## Snippet 5 — Full-page scroll progress bar (외부 element)
+
+<!-- motion-snippet: name=scroll-progress-bar stack=gsap -->
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+const heroRef = useRef<HTMLDivElement | null>(null);
+
+useGSAP(
+  () => {
+    // ❗ Category B — progress bar 는 heroRef 외부 → document.querySelector
+    const progressBarEl = document.querySelector<HTMLElement>(
+      "#scroll-progress",
+    );
+    if (!progressBarEl) return;
+
+    gsap.to(progressBarEl, {
+      scaleX: 1,
+      ease: "none",
+      scrollTrigger: {
+        start: 0,
+        end: () => ScrollTrigger.maxScroll(window),
+        scrub: true,
+        invalidateOnRefresh: true,
+      },
+    });
+  },
+  { scope: heroRef },
+);
+
+// JSX (heroRef 의 sibling, document body 직속):
+<div
+  id="scroll-progress"
+  aria-hidden
+  style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    background: "var(--brand-accent)",
+    zIndex: 50,
+    transformOrigin: "left center",
+    transform: "scaleX(0)",
+    pointerEvents: "none",
+  }}
+/>
+```
+
+---
+
+## Snippet 6 — DrawSVG monogram / signature path reveal
+
+<!-- motion-snippet: name=drawsvg-monogram stack=gsap -->
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
+
+useGSAP(() => {
+  if (reduce) return;
+
+  const monogramPaths = gsap.utils.toArray<SVGPathElement>(
+    "#brand-monogram [data-draw]",
+  );
+  if (!monogramPaths.length) return;
+
+  gsap.set(monogramPaths, { drawSVG: "0%" });
+  gsap.to(monogramPaths, {
+    drawSVG: "100%",
+    duration: 1.6,
+    ease: "power2.inOut",
+    stagger: 0.18,
+  });
+}, { scope: heroRef, dependencies: [reduce] });
+
+// JSX:
+<svg
+  id="brand-monogram"
+  width="28"
+  height="28"
+  viewBox="0 0 32 32"
+  fill="none"
+  stroke="currentColor"
+  strokeWidth="1.75"
+  strokeLinecap="square"
+>
+  <path data-draw d="M3 6 L29 6 L29 14 L3 14 L3 26 L29 26" />
+  <path data-draw d="M16 6 L16 26" />
+</svg>
+```
+
+---
+
+## Snippet 7 — ScrollTrigger.batch (tile staggered reveal on scroll)
+
+<!-- motion-snippet: name=scrolltrigger-batch stack=gsap -->
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+useGSAP(() => {
+  if (reduce) return;
+
+  // ❗ Category B — tiles 가 useGSAP scope 외부면 document.querySelectorAll
+  const tileNodes = Array.from(
+    document.querySelectorAll<HTMLElement>(".project-tile"),
+  );
+  if (!tileNodes.length) return;
+
+  ScrollTrigger.batch(tileNodes, {
+    start: "top 88%",
+    onEnter: (batch) =>
+      gsap.from(batch, {
+        opacity: 0,
+        y: 80,
+        scale: 0.96,
+        duration: 0.95,
+        stagger: 0.12,
+        ease: "brand",
+        overwrite: "auto",
+      }),
+  });
+
+  // 각 tile inner image 에 scrub parallax
+  tileNodes.forEach((tile) => {
+    const inner = tile.querySelector<HTMLElement>(".tile-inner");
+    if (!inner) return;
+    gsap.to(inner, {
+      yPercent: -12,
+      ease: "none",
+      scrollTrigger: {
+        trigger: tile,
+        start: "top bottom",
+        end: "bottom top",
+        scrub: 0.8,
+      },
+    });
+  });
+}, { scope: heroRef, dependencies: [reduce] });
+```
+
+---
+
+## Snippet 8 — Magnetic CTA (Framer Motion spring)
+
+<!-- motion-snippet: name=magnetic-cta stack=framer -->
+
+```tsx
+"use client";
+
+import { useRef, type MouseEvent as ReactMouseEvent } from "react";
+import { motion, useMotionValue, useReducedMotion } from "motion/react";
+
+export function MagneticCTA({
+  children,
+  href,
+}: {
+  children: React.ReactNode;
+  href: string;
+}) {
+  const ref = useRef<HTMLAnchorElement | null>(null);
+  const reduce = useReducedMotion();
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const handleMouseMove = (e: ReactMouseEvent<HTMLAnchorElement>) => {
+    if (reduce || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    x.set(dx * 0.22);
+    y.set(dy * 0.30);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.a
+      ref={ref}
+      href={href}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      whileTap={reduce ? undefined : { scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+      style={{ x, y, display: "inline-flex", cursor: "pointer" }}
+      className="magnetic-cta"
+    >
+      {children}
+    </motion.a>
+  );
+}
+```
+
+**중요**: 한 페이지에 magnetic CTA 1개만 (primary). 모든 link 에 적용 시 노이즈.
+
+---
+
+## Snippet 9 — Marquee infinite scroll (Magic UI 패턴)
+
+<!-- motion-snippet: name=marquee stack=framer -->
+
+```tsx
+"use client";
+
+import { cn } from "@/lib/utils";  // tailwind-merge + clsx
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+
+interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
+  pauseOnHover?: boolean;
+  reverse?: boolean;
+  vertical?: boolean;
+  repeat?: number;
+  children: ReactNode;
+}
+
+export function Marquee({
+  pauseOnHover = true,
+  reverse = false,
+  vertical = false,
+  repeat = 4,
+  className,
+  children,
+  ...props
+}: MarqueeProps) {
+  return (
+    <div
+      {...props}
+      className={cn(
+        "group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem]",
+        "[gap:var(--gap)]",
+        { "flex-row": !vertical, "flex-col": vertical },
+        className,
+      )}
+    >
+      {Array(repeat)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+              "animate-marquee flex-row": !vertical,
+              "animate-marquee-vertical flex-col": vertical,
+              "group-hover:[animation-play-state:paused]": pauseOnHover,
+              "[animation-direction:reverse]": reverse,
+            })}
+          >
+            {children}
+          </div>
+        ))}
+    </div>
+  );
+}
+```
+
+```css
+/* globals.css */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - var(--gap))); }
+}
+@keyframes marquee-vertical {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(-100% - var(--gap))); }
+}
+.animate-marquee { animation: marquee var(--duration) linear infinite; }
+.animate-marquee-vertical { animation: marquee-vertical var(--duration) linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee, .animate-marquee-vertical { animation-play-state: paused; }
+}
+```
+
+---
+
+## Snippet 10 — anime.js v4 SVG path morph
+
+<!-- motion-snippet: name=anime-morph stack=anime -->
+
+```tsx
+"use client";
+
+import { useEffect } from "react";
+import { useReducedMotion } from "motion/react";
+import { createTimeline, svg } from "animejs";
+
+export function MorphingMark() {
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    if (reduce) return;
+
+    const target = document.querySelector<SVGPathElement>("#morph-target");
+    if (!target) return;
+
+    // ❗ Category C — anime.js loop 만 적용. 같은 wrapper 에 GSAP rotation 추가 금지.
+    const tl = createTimeline({
+      defaults: { duration: 2400, ease: "inOutQuad" },
+      loop: true,
+    });
+
+    tl.add(target, { d: svg.morphTo("#morph-state-b") });
+    tl.add(target, { d: svg.morphTo("#morph-state-c") });
+    tl.add(target, { d: svg.morphTo("#morph-target") });
+
+    return () => { tl.pause(); };
+  }, [reduce]);
+
+  return (
+    <div aria-hidden style={{ position: "absolute", right: 64, top: 96 }}>
+      <svg width="64" height="64" viewBox="0 0 96 96" fill="none">
+        <defs>
+          <path id="morph-state-b" d="M48 8 L88 48 L48 88 L8 48 Z" />
+          <path id="morph-state-c" d="M8 8 L88 8 L48 88 Z" />
+        </defs>
+        <path
+          id="morph-target"
+          d="M8 8 L88 8 L88 88 L8 88 Z"
+          stroke="var(--brand-accent)"
+          strokeWidth="1.5"
+          fill="none"
+        />
+      </svg>
+    </div>
+  );
+}
+```
+
+---
+
+## Snippet 11 — Lenis smooth scroll (전역 inertia)
+
+<!-- motion-snippet: name=lenis-smooth stack=lenis -->
+
+```tsx
+"use client";
+
+import { useEffect } from "react";
+import Lenis from "lenis";
+
+export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // mobile 에서는 touch hijacking 방지 위해 disable
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => { lenis.destroy(); };
+  }, []);
+
+  return <>{children}</>;
+}
+```
+
+**ScrollTrigger 와 동시 사용 시**: Lenis 의 scroll event 를 ScrollTrigger 에 동기화 — `ScrollTrigger.update` 를 Lenis raf 안에서 호출.
+
+---
+
+## Snippet 12 — prefers-reduced-motion full gate (JS + CSS 양 layer)
+
+<!-- motion-snippet: name=reduced-motion stack=mixed -->
+
+JS gate (Framer):
+
+```tsx
+import { useReducedMotion } from "motion/react";
+
+const reduce = useReducedMotion();
+if (reduce) return;  // 모든 motion init skip
+```
+
+CSS gate (모든 컴포넌트 root style 에 박힘):
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .split-char { transform: none !important; opacity: 1 !important; }
+}
+```
+
+**Category E — 양쪽 모두 박지 않으면 fail.** JS gate 만으로는 CSS transition / keyframe 이 안 막힘.
+
+---
+
+## Snippet 13 — Variable font weight hover (nav links)
+
+<!-- motion-snippet: name=variable-font-hover stack=css -->
+
+```tsx
+const variableWeightHover: CSSProperties = {
+  fontVariationSettings: '"wght" 400',
+  transition:
+    "font-variation-settings 220ms cubic-bezier(0.86,0,0.07,1), color 220ms cubic-bezier(0.86,0,0.07,1)",
+};
+
+// CSS:
+.nav-link:hover {
+  font-variation-settings: 'wght' 510 !important;
+  color: var(--brand-accent) !important;
+}
+```
+
+Inter Variable / Geist Variable / Söhne Variable 등 variable font 가 import 되어 있어야 동작.
+
+---
+
+## Snippet 14 — Flip layout transition (project grid → detail)
+
+<!-- motion-snippet: name=flip-layout stack=gsap -->
+
+```tsx
+"use client";
+
+import { gsap } from "gsap";
+import { Flip } from "gsap/Flip";
+
+// 1. Capture before state
+const state = Flip.getState(".project-tile, .project-tile img");
+
+// 2. Mutate DOM (navigate, move element, change classes)
+//    예: Next.js Link click → 별도 detail page 진입
+//    실제로는 layout 변경 시점에 호출
+
+// 3. Animate from captured state
+Flip.from(state, {
+  duration: 0.8,
+  ease: "expo.inOut",
+  absolute: true,
+  onEnter: (elements) => gsap.fromTo(elements, { opacity: 0 }, { opacity: 1, duration: 0.5 }),
+  onLeave: (elements) => gsap.to(elements, { opacity: 0, duration: 0.3 }),
+});
+```
+
+---
+
+## Pre-commit motion stack audit (designer agent 의무)
+
+코드 생성 완료 후 다음 grep 실행해 motion stack 실제 사용 검증. 0 매치면 abstract 텍스트만 보고 CSS keyframes 로 fallback 한 것 → re-generate:
+
+```bash
+PROJECT_DIR=<project>/app
+# A. GSAP 실사용 (DSP 가 motion-heavy 면 필수)
+grep -rE "useGSAP|gsap\.(to|from|fromTo|set|timeline)|ScrollTrigger" "$PROJECT_DIR"
+# B. SplitText / DrawSVG / CustomEase 의무 (agency-portfolio / editorial-magazine 톤)
+grep -rE "SplitText|DrawSVG|CustomEase" "$PROJECT_DIR"
+# C. anime.js v4 (path morph 가 DSP 에 박혀있으면)
+grep -rE "createTimeline|svg\.morphTo" "$PROJECT_DIR"
+# D. Framer Motion spring (magnetic CTA)
+grep -rE "useMotionValue|whileTap.*spring|stiffness:" "$PROJECT_DIR"
+# E. 단순 CSS keyframes 만 등장 + 위 grep 모두 0 매치 = FAIL
+grep -rE "@keyframes" "$PROJECT_DIR" | wc -l
+```
+
+**판정 룰** (motion-heavy DSP 적용 시):
+- 위 A-D 중 ≥ 2 카테고리 매치 = pass
+- A-D 모두 0 매치 + E 만 매치 = **FAIL — re-generate**, snippet 2-7 verbatim 박을 것
+- 한쪽만 적용 (예: GSAP 만 + Framer 없음) = motion-heavy DSP 라면 충돌 — 본 카탈로그 의도 (각 책임 분리) 확인
+
+---
+
+## DSP 별 권장 snippet matrix
+
+| DSP | 권장 snippet | 우선순위 |
+|---|---|---|
+| agency-portfolio | 2 (register) + 3 (SplitText) + 4 (pin scrub) + 5 (progress bar) + 6 (DrawSVG) + 7 (batch) + 8 (magnetic) + 10 (anime morph) + 12 (reduced motion) | **MANDATORY** all 9 |
+| editorial-magazine | 2 + 3 + 4 + 6 + 12 + 13 (variable font) | high |
+| corporate-b2b | 2 + 3 + 4 + 7 + 12 | medium |
+| fintech-saas (Magic UI 톤) | 8 + 9 (marquee) + 12 | medium — GSAP optional |
+| wellness-platform | 12 만 (Section 3 의 "안정적" 룰 — GSAP 미권장) | low |
+| kpop-entertainment | 2 + 3 + 4 + 7 + 11 (Lenis) + 12 | high |
+| automotive-mobility | 2 + 4 + 11 + 12 | high |
+
+DSP 본문 의 Section 3 (Animation) 에 위 권장 snippet 번호 명시. designer agent 가 코드 생성 시 그대로 박음.
