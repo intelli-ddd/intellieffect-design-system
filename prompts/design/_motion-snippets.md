@@ -322,18 +322,37 @@ useGSAP(() => {
   );
   if (!tileNodes.length) return;
 
+  // v1.9.5 fix — `gsap.from + onEnter` skips already-in-view tiles.
+  // Use gsap.set + gsap.to + manual reveal for in-view.
+  gsap.set(tileNodes, { opacity: 0, y: 80, scale: 0.96 });
+
   ScrollTrigger.batch(tileNodes, {
-    start: "top 88%",
+    start: "top 95%",
     onEnter: (batch) =>
-      gsap.from(batch, {
-        opacity: 0,
-        y: 80,
-        scale: 0.96,
+      gsap.to(batch, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
         duration: 0.95,
         stagger: 0.12,
         ease: "brand",
         overwrite: "auto",
       }),
+  });
+
+  // tiles already in viewport at load — manually reveal (onEnter won't fire).
+  ScrollTrigger.refresh();
+  tileNodes.forEach((tile) => {
+    if (tile.getBoundingClientRect().top < window.innerHeight * 0.95) {
+      gsap.to(tile, {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        duration: 0.95,
+        ease: "brand",
+        overwrite: "auto",
+      });
+    }
   });
 
   // 각 tile inner image 에 scrub parallax

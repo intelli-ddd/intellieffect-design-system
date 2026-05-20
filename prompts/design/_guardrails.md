@@ -107,7 +107,20 @@ useGSAP(
     // ✅ External NodeList — toArray + forEach
     const tileNodes = Array.from(document.querySelectorAll<HTMLElement>(".project-tile"));
     if (tileNodes.length) {
-      ScrollTrigger.batch(tileNodes, { onEnter: batch => gsap.from(batch, { ... }) });
+      // v1.9.5 — `gsap.set` initial + `gsap.to` onEnter (NOT `gsap.from`) +
+      // manual reveal for already-in-view nodes. `gsap.from` skips nodes
+      // already past start trigger at page load.
+      gsap.set(tileNodes, { opacity: 0, y: 80 });
+      ScrollTrigger.batch(tileNodes, {
+        start: "top 95%",
+        onEnter: batch => gsap.to(batch, { opacity: 1, y: 0, duration: 0.9, stagger: 0.1, overwrite: "auto" }),
+      });
+      ScrollTrigger.refresh();
+      tileNodes.forEach((t) => {
+        if (t.getBoundingClientRect().top < window.innerHeight * 0.95) {
+          gsap.to(t, { opacity: 1, y: 0, duration: 0.9, overwrite: "auto" });
+        }
+      });
     }
   },
   { scope: heroRef },

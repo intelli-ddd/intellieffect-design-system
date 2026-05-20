@@ -271,18 +271,44 @@ agency 의 chars stagger / kpop 의 8-stage sequenced / cinema 의 3D camera 와
 ### 7.2 Scroll behavior — block reveal only
 
 ```tsx
+// v1.9.5 fix — `gsap.from + onEnter` skips sections that are ALREADY in
+// viewport at page load (hero / first-fold). Use `gsap.set initial state +
+// gsap.to onEnter + immediate reveal for in-view` 3-step pattern.
+//
+// CSS 초기 상태 [data-section] { opacity: 1; } (FOUC-safe).
+// JS 에서 즉시 set opacity:0 으로 override → ScrollTrigger 가 reveal 담당.
+
+gsap.set("[data-section]", { opacity: 0, y: 24 });
+
 ScrollTrigger.batch("[data-section]", {
-  start: "top 80%",
-  onEnter: (batch) => gsap.from(batch, {
-    opacity: 0,
-    y: 24,
+  start: "top 95%",                       // top 80% 보다 더 lenient
+  onEnter: (batch) => gsap.to(batch, {    // gsap.to (NOT gsap.from)
+    opacity: 1,
+    y: 0,
     duration: 1.1,
     stagger: 0.05,
     ease: "expo.out",
     overwrite: "auto",
   }),
 });
+
+// belt-and-suspenders — 페이지 load 시점에 이미 viewport 안에 있는 섹션
+// (hero, first-fold) 은 onEnter 가 안 발화. 직접 reveal.
+ScrollTrigger.refresh();
+document.querySelectorAll<HTMLElement>("[data-section]").forEach((el) => {
+  if (el.getBoundingClientRect().top < window.innerHeight * 0.95) {
+    gsap.to(el, {
+      opacity: 1,
+      y: 0,
+      duration: 1.1,
+      ease: "expo.out",
+      overwrite: "auto",
+    });
+  }
+});
 ```
+
+**Why**: `gsap.from()` 은 element 의 현재 state 를 final 로 설정 후 from state 에서 animation 시작 — 단, onEnter 가 already-in-view 섹션에 안 발화하면 element 가 `from` state (`opacity: 0, y: 24`) 에서 멈춤. v19-brutal demo 첫 빌드에서 모든 hero section opacity:0 으로 white blank 노출 → 이 패턴으로 fix.
 
 NO pin / NO scrub / NO horizontal carousel. 단순 enter 시 fade + y. brutalist restraint.
 
