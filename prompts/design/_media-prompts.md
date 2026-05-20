@@ -180,9 +180,9 @@ gpt-image-1 (2025 release) 공식 지원 size: `1024x1024` / `1024x1536` / `1536
 
 ## Provider matrix
 
-### gpt-image-1 (default — image actual gen)
+### Codex CLI (default — image actual gen, OAuth auth)
 
-`scripts/codex-media-gen.sh` 가 호출. OpenAI Images API, $0.04/image (high quality), 약 15-30s 생성.
+`scripts/codex-media-gen.sh` 가 `codex exec` 으로 호출. **OPENAI_API_KEY 불필요** — Codex CLI 가 자체 OAuth 자격증명 (`~/.codex/auth.json`, `codex login` 으로 관리) 으로 Images API 인증. 생성된 PNG 는 `~/.codex/generated_images/<session>/ig_<hash>.png` 에 저장되고, 스크립트가 `--output` 경로로 copy.
 
 ```bash
 codex-media-gen.sh \
@@ -192,6 +192,11 @@ codex-media-gen.sh \
   --size 1536x1024 \
   --quality high
 ```
+
+전제 조건:
+- `codex` CLI 0.131+ 설치 (`brew install codex` 또는 `npm i -g @openai/codex-cli`)
+- `codex login` 수행 (`~/.codex/auth.json` 존재)
+- 생성 시간: 약 20-40s (Codex agent 가 imagegen skill 호출 + 응답 streaming + 파일 저장)
 
 ### Midjourney v7 (manual, 고품질 또는 21:9 등 특수 비율)
 

@@ -191,7 +191,8 @@ GSAP showcase reference 중 다수 (Luke Baffait / Studio375 / DAVINCII) 가 her
 생성 방법:
 
 ```bash
-# Image (gpt-image-1, OPENAI_API_KEY 필요)
+# 전제: codex login 완료 (OAuth, OPENAI_API_KEY 불필요)
+# Image (Codex CLI imagegen skill 호출)
 ./scripts/codex-media-gen.sh \
   --dsp agency-portfolio \
   --prompt cover-01 \
