@@ -89,6 +89,135 @@ cd intellieffect-design-system
 - **`frontend-design@claude-plugins-official`** (강력 권장) — base aesthetic guardrail. 본 plugin은 그 위에 IntelliEffect token 강제하는 wrapper로 작동.
 - **Playwright MCP server** (designer agent의 iteration loop 사용 시 필요) — `claude_desktop_config.json` 또는 `.mcp.json`에 `@playwright/mcp` 설정.
 
+## Multi-IDE / Multi-Tool 사용 시나리오
+
+**DSP markdown 자체는 portable** — 어느 LLM 코딩 도구든 사용 가능. 자동화 layer (designer agent, skill auto-trigger, plugin install) 만 Claude Code 한정. 다음은 각 도구별 활용 패턴.
+
+### Claude Code (recommended — full automation)
+
+위 Path A 또는 Path B 참조. Auto-trigger skill + designer agent + DSP catalog 모두 작동.
+
+### Codex CLI (OpenAI)
+
+**자동 트리거는 없음** — 사용자가 prompt에 어느 DSP인지 명시 + DSP 본문 inline 인용. 두 가지 setup pattern:
+
+#### Pattern 1 — Per-prompt inline (가장 단순)
+
+```bash
+# 1. repo clone (한 번)
+gh repo clone intelli-ddd/intellieffect-design-system ~/intellieffect-design-system
+
+# 2. 매 prompt 시 DSP cat + 작업 명세 결합
+codex "$(cat <<EOF
+다음 Design System Prompt를 verbatim 적용해서 결과물을 만들어줘.
+이 DSP의 모든 token (color hex, typography, radius, shadow)을 한 글자도 변경 금지.
+Banned patterns 섹션도 grep으로 검증 후 reject.
+
+==================== DSP START ====================
+$(cat ~/intellieffect-design-system/prompts/design/web/fintech-saas.md)
+==================== DSP END ====================
+
+# TASK
+Next.js 14 + Tailwind v4로 fintech SaaS hero section 작성.
+좌측 asymmetric single-column + 우측 mono compliance meta.
+파일: app/page.tsx + app/_hero.tsx
+
+# OUTPUT
+완성된 tsx 파일 + 적용한 DSP token compliance 보고.
+EOF
+)"
+```
+
+또는 더 짧게 — repo의 helper script 사용:
+
+```bash
+~/intellieffect-design-system/scripts/codex-dsp.sh web/fintech-saas \
+  "Next.js 14 fintech hero 짜줘. 파일: app/page.tsx + _hero.tsx"
+```
+
+#### Pattern 2 — Project-level AGENTS.md (자동 inject)
+
+Codex CLI는 프로젝트 루트의 `AGENTS.md`를 자동 read. 한 프로젝트에서 특정 DSP 고정 시:
+
+```bash
+# 프로젝트 루트에 AGENTS.md 생성
+cat > AGENTS.md <<EOF
+# Project Design System
+
+본 프로젝트는 \`intellieffect-design-system\`의 \`fintech-saas\` DSP를 verbatim 적용한다.
+
+## DSP 위치
+
+\`~/intellieffect-design-system/prompts/design/web/fintech-saas.md\`
+
+## 적용 룰
+
+1. DSP의 모든 token (color hex, typography family, radius, shadow stack) verbatim — 변경 금지
+2. DSP의 Banned patterns 섹션을 코드 생성 전 mental grep
+3. Single-shot 금지 — screenshot critique 1라운드 이상
+
+## DSP 본문 (자동 inject용)
+
+$(cat ~/intellieffect-design-system/prompts/design/web/fintech-saas.md)
+EOF
+```
+
+이후 Codex가 그 디렉토리에서 작업할 때 AGENTS.md를 자동 시스템 prompt에 inject. 매 prompt에 manual cat 불필요.
+
+**팀원에게 안내할 메시지 (Codex 사용자):**
+
+> "프로젝트 루트에 `AGENTS.md` 만들고 그 안에 `intellieffect-design-system/prompts/design/web/<도메인>.md` 본문 복사. Codex가 그 파일을 매 prompt에 자동 inject함. DSP token verbatim 적용 + banned patterns 회피 명시. 자동 트리거는 Claude Code 한정이라 Codex는 prompt에 어느 DSP인지 명시 필요."
+
+### Cursor
+
+`.cursor/rules/*.mdc` 시스템 활용:
+
+```bash
+# DSP를 Cursor rules로 변환 (수동 — frontmatter 약간 다름)
+mkdir -p .cursor/rules
+cp ~/intellieffect-design-system/prompts/design/web/fintech-saas.md \
+   .cursor/rules/fintech-saas.mdc
+
+# .mdc frontmatter 추가 (Cursor가 어느 파일에 적용할지)
+# 파일 상단에 다음 추가:
+# ---
+# description: IntelliEffect fintech-saas DSP - apply to all UI files
+# globs: ["app/**/*.tsx", "components/**/*.tsx"]
+# alwaysApply: true
+# ---
+```
+
+Cursor가 해당 globs 매칭 파일 편집 시 자동 inject. Claude Code의 description trigger와 가장 가까운 mechanism.
+
+### Aider
+
+`--read` flag로 DSP를 매 세션 inject:
+
+```bash
+aider --read ~/intellieffect-design-system/prompts/design/web/fintech-saas.md
+```
+
+Aider가 system prompt 일부로 DSP 영구 유지.
+
+### Cline / Continue.dev
+
+Custom instructions에 DSP 본문 paste. Cline은 settings의 "Custom Instructions"에, Continue는 `~/.continue/config.json`의 `systemMessage`에.
+
+### 일반 ChatGPT / Claude.ai (chat UI)
+
+매 대화 시작 시 DSP 본문 paste. 가장 manual.
+
+### 도구별 비교
+
+| 도구 | 자동 inject 메커니즘 | 자동 트리거 (도메인 매칭) | Manual effort |
+|---|---|---|---|
+| Claude Code (plugin) | description trigger | ✅ | Low |
+| Cursor | `.cursor/rules/*.mdc` + globs | ⚠️ (globs match) | Medium (setup once) |
+| Codex CLI | `AGENTS.md` 자동 read | ❌ (DSP 명시 필요) | Low (setup once) |
+| Aider | `--read` flag | ❌ | Low (per session) |
+| Cline / Continue | Custom instructions | ❌ | Medium (paste) |
+| Web chat | Manual paste | ❌ | High |
+
 ## 사용 패턴
 
 ```

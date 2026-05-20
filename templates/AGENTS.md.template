@@ -1,0 +1,86 @@
+# Project Design System — AGENTS.md template
+
+> **사용법**: 본 파일을 프로젝트 루트에 `AGENTS.md`로 복사하고 `<PLACEHOLDER>` 부분을 채운다. Codex CLI가 자동으로 매 prompt에 inject한다 (다른 agentic 도구도 AGENTS.md 표준을 점차 지원 — Cursor, Aider, Cline 등 일부 호환).
+>
+> **DSP 본문 inline 임베드 권장** — symlink/reference보다 본문 직접 복사가 portable + 도구별 호환성 최대.
+
+---
+
+본 프로젝트는 `intellieffect-design-system`의 `<DSP-SLUG>` DSP를 verbatim 적용한다.
+
+## 적용 룰 (모든 UI 작업에 강제)
+
+1. **DSP token verbatim** — 아래 inline DSP의 모든 color hex, typography family, radius, shadow stack을 한 글자도 변경 금지
+2. **Banned patterns grep** — 아래 DSP의 "Banned patterns" 섹션을 코드 생성 전 검증, 매칭되면 reject
+3. **Single accent strict ratio** — page surface의 5-10%만 accent 사용
+4. **Sentence-case headlines** — Title Case 금지
+5. **Tabular-nums + OpenType features 글로벌** — 모든 numeric 표시에 `font-variant-numeric: tabular-nums slashed-zero`
+6. **3-layer shadow stack** — `shadow-lg` 단일 drop 금지
+7. **Asymmetric layout** — 7:5 split hero / 3-up uniform grid / centered+stacked CTA 모두 금지
+8. **Visual hook 정확히 1개** — gradient mesh / cinematic photo / 3D render / illustration / pure typography 중 사이트 전체 일관 적용
+9. **Single-shot 금지** — 코드 작성 후 self-critique 1라운드 이상
+
+## 적용 DSP
+
+**Slug**: `<DSP-SLUG>` (예: `web/fintech-saas`, `mobile/wellness-app`, `web/real-estate-kr`)
+**Source**: `intelli-ddd/intellieffect-design-system` repo
+
+## DSP 본문 (verbatim inline)
+
+> **여기에 `intellieffect-design-system/prompts/design/<DSP-SLUG>.md` 본문 전체 복사 붙여넣기**
+>
+> `cat ~/intellieffect-design-system/prompts/design/<DSP-SLUG>.md` 결과를 그대로 박는다. paraphrase·요약 금지.
+
+```
+<PASTE DSP CONTENT HERE>
+```
+
+---
+
+## Task별 권장 추가 instruction
+
+UI 작업 요청 시 다음 형식 권장:
+
+```
+# TASK
+<구체적 요구사항 — 페이지 type, 파일 경로, 사용 framework>
+
+# CONTEXT
+- Framework: Next.js 14 / Vue / SwiftUI / etc.
+- 설치된 deps: cva, tailwind-merge, clsx (web 한정)
+- 기존 자산 reuse: <기존 컴포넌트 명시>
+
+# MUST DO / MUST NOT
+- 위 적용 룰 + DSP banned patterns 준수
+- 다른 페이지 수정 금지 (scope discipline)
+
+# OUTPUT
+- 완성된 파일 (full content)
+- DSP token compliance 보고
+- 적용한 visual hook + 회피한 banned patterns 명시
+```
+
+## DSP 업데이트 시
+
+`intellieffect-design-system` repo가 업데이트되면:
+
+```bash
+# 1. repo pull
+cd ~/intellieffect-design-system && git pull
+
+# 2. 본 AGENTS.md의 "DSP 본문 (verbatim inline)" 섹션 갱신
+cat ~/intellieffect-design-system/prompts/design/<DSP-SLUG>.md
+# → 결과를 위 코드블록에 붙여넣기
+
+# 3. commit
+git add AGENTS.md && git commit -m "chore: sync DSP from intellieffect-design-system"
+```
+
+또는 자동화 — `scripts/sync-dsp.sh` 같은 helper script로 cron 또는 git hook.
+
+## 참고
+
+- Repo: https://github.com/intelli-ddd/intellieffect-design-system
+- DSP 카탈로그 (총 20개): repo README 참조
+- Claude Code 사용자는 별도 install (plugin 또는 `./install.sh`) — 자동 트리거 추가 활용
+- Codex 외 도구 (Cursor, Aider, Cline) 도 본 AGENTS.md 형식 부분 호환
