@@ -1820,3 +1820,465 @@ useGSAP(() => {
 | Cluster E AI Observability SaaS | #2 + #24 scramble + #9 marquee (compliance ribbon) + #12 + #32 | #3 / #4 / #15 / #17 / #18 / #25 / #26 |
 | Cluster F Playful illustrated | #2 + #27 MorphSVG elastic CTA + Lottie + #11 + #12 + #32 | #3 / #4 / #15 / #17 / #18 / #23 / #25 |
 | Cluster G ASCII typography only | #2 + #23 ASCII matrix + #22 entry gate + #29 variable font + #12 + #32 | All other snippets — minimalism is the rule |
+
+---
+
+# v1.9.6 — gap audit snippets (#33-#40)
+
+2026-05-21 gsap-bp-audit 2nd pass 기반. 1차 (v1.9.4 #20-#32) 가 cluster identity 의 hero/scroll/cursor 카탈로그였다면, 본 batch 는 **page-level orchestration** (page transition / scroll anchor / WebGL bridge / interruptible toggle / state pages) 보강.
+
+---
+
+## Snippet 33 — MorphSVG → DrawSVG sequential reveal
+
+<!-- motion-snippet: name=morphsvg-drawsvg-sequential stack=gsap -->
+
+**출처**: Sazabi (JOYCO open-source registry) — MorphSVG + DrawSVG + Flip 조합. AI observability data viz signature.
+
+**Use case**: AI SaaS / data viz / dev tool — abstract data flow diagram 의 reveal. 단순 fade 가 아닌 path morph 후 stroke draw.
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
+import { MorphSVGPlugin } from "gsap/MorphSVGPlugin";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(useGSAP, ScrollTrigger, DrawSVGPlugin, MorphSVGPlugin);
+}
+
+useGSAP(() => {
+  if (reduce) return;
+  const tl = gsap.timeline({
+    scrollTrigger: { trigger: "#data-flow", start: "top 70%", once: true },
+  });
+
+  // 1. Initial shape morph (rect → ellipse → final shape)
+  tl.to("#flow-path", { duration: 0.6, morphSVG: "#shape-stage-1", ease: "expo.out" });
+  tl.to("#flow-path", { duration: 0.6, morphSVG: "#shape-final", ease: "expo.out" }, "+=0.15");
+
+  // 2. Stroke draw (after morph completes)
+  tl.fromTo(
+    "#flow-path",
+    { drawSVG: "0%" },
+    { drawSVG: "100%", duration: 1.2, ease: "power2.inOut" },
+    "-=0.3"
+  );
+
+  // 3. Connecting nodes pop-in after stroke
+  tl.fromTo(
+    ".flow-node",
+    { scale: 0, opacity: 0 },
+    { scale: 1, opacity: 1, duration: 0.4, stagger: 0.08, ease: "back.out(1.6)" },
+    "-=0.4"
+  );
+}, [reduce]);
+```
+
+---
+
+## Snippet 34 — CustomEase × ScrollTo anchor navigation
+
+<!-- motion-snippet: name=customease-scrollto stack=gsap -->
+
+**출처**: DAVINCII (Fibonacci chapter framework — chapter dot click → smooth scroll to section) + Bottega53 horizontal scroll anchor.
+
+**Use case**: 대용량 single-page site 의 anchor nav — Lenis 와 동시 작동, scroll behavior smooth + CustomEase 로 cinematic. native `scrollIntoView` 와 차별.
+
+```tsx
+import { gsap } from "gsap";
+import { ScrollToPlugin } from "gsap/ScrollToPlugin";
+import { CustomEase } from "gsap/CustomEase";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollToPlugin, CustomEase);
+  if (!CustomEase.get("anchor")) {
+    CustomEase.create("anchor", "M0,0 C0.32,0 0.08,1 1,1");
+  }
+}
+
+export function scrollToSection(targetSelector: string, offset = 0) {
+  // Lenis 와 동시 사용 시: Lenis instance.scrollTo 호출 권장 — gsap.to(window, scrollTo) 가 Lenis 의 raf 와 충돌 가능.
+  gsap.to(window, {
+    duration: 1.2,
+    scrollTo: { y: targetSelector, offsetY: offset, autoKill: true },
+    ease: "anchor",
+  });
+}
+
+// Usage:
+// <a onClick={() => scrollToSection("#chapter-3", 80)}>03</a>
+```
+
+---
+
+## Snippet 35 — GSAP timeline → WebGL uniform bridge
+
+<!-- motion-snippet: name=gsap-webgl-uniform stack=gsap -->
+
+**출처**: Thibault Guignand portfolio (Codrops 2026-05-06 "From Shader Uniforms to Clip-Path Wipes: How GSAP Drives My Portfolio") verbatim.
+
+**Use case**: 포트폴리오 / cinematic-immersion-auto / WebGL shader-driven hero — GSAP timeline 의 scrub progress 를 shader uniform 으로 직접 piping.
+
+```tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import * as THREE from "three";
+
+// Shader material uniform
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    uProgress: { value: 0 },
+    uTime: { value: 0 },
+  },
+  vertexShader: /* ... */,
+  fragmentShader: /* uniform float uProgress; ... */,
+});
+
+// GSAP timeline drives uProgress
+const progressTarget = { value: 0 };
+gsap.to(progressTarget, {
+  value: 1,
+  ease: "none",
+  scrollTrigger: {
+    trigger: "#hero-canvas",
+    start: "top top",
+    end: "+=200%",
+    scrub: 1.2,
+  },
+  onUpdate() {
+    material.uniforms.uProgress.value = progressTarget.value;
+  },
+});
+
+// useFrame from R3F 에서 uTime 만 RAF 갱신
+function ShaderPlane() {
+  useFrame((state) => {
+    material.uniforms.uTime.value = state.clock.elapsedTime;
+  });
+  return <mesh material={material}>{/* geometry */}</mesh>;
+}
+```
+
+**중요**: `onUpdate` 안에서 uniform 직접 set — React state 우회. `lerp` 또는 `smoothstep` 은 shader 내부에서 처리.
+
+---
+
+## Snippet 36 — gsap.matchMedia() with prefers-reduced-motion
+
+<!-- motion-snippet: name=matchmedia-reduced-motion stack=gsap -->
+
+**출처**: Arnaud Rocca / Codrops 2026-04 — `gsap.matchMedia()` 가 v3.11+ 부터 가장 권장되는 reduced-motion 패턴.
+
+**Use case**: 모든 motion-heavy DSP. snippet #12 (manual JS gate) 보다 강력 — matchMedia 가 viewport / preference 변경 시 자동 cleanup + rebuild.
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+
+useGSAP(() => {
+  const mm = gsap.matchMedia();
+
+  // 1. 정상 motion variant (preference: no-preference)
+  mm.add("(prefers-reduced-motion: no-preference)", () => {
+    const tl = gsap.timeline();
+    tl.from(".hero-title .word", {
+      yPercent: 100,
+      opacity: 0,
+      stagger: 0.04,
+      duration: 0.9,
+      ease: "expo.out",
+    });
+    tl.from(".hero-cta", { y: 24, opacity: 0, duration: 0.6, ease: "expo.out" }, "-=0.3");
+
+    // matchMedia cleanup 시 자동 revert
+    return () => {
+      tl.kill();
+    };
+  });
+
+  // 2. Reduced-motion variant — parallel design (NOT just disable)
+  mm.add("(prefers-reduced-motion: reduce)", () => {
+    // 단순 disable 이 아니라 "다른 acceptable visual variant" 제공:
+    // - hero title 즉시 표시 (opacity 1, no stagger)
+    // - subtle color tint cross-fade 만 사용 (0.3s linear)
+    gsap.set(".hero-title .word", { yPercent: 0, opacity: 1 });
+    gsap.set(".hero-cta", { y: 0, opacity: 1 });
+
+    const accentFade = gsap.to(".hero-cta", {
+      backgroundColor: "var(--brand-accent-soft)",
+      duration: 0.3,
+      ease: "none",
+      yoyo: true,
+      repeat: -1,
+      repeatDelay: 2.0,
+    });
+
+    return () => {
+      accentFade.kill();
+    };
+  });
+}, []);
+```
+
+**핵심 paradigm shift** (Cassie Evans via Thibault Guignand): reduced motion = "motion 끔" 이 아니라 **"동등한 정보 전달 + 다른 visual layer"**. 색·typography·layout 만 으로 brand identity 전달 가능해야.
+
+---
+
+## Snippet 37 — Lenis × GSAP ticker sync (lag smoothing off)
+
+<!-- motion-snippet: name=lenis-gsap-ticker-v2 stack=lenis -->
+
+**출처**: Maxima Therapy (Codrops 2026-04-06) verbatim.
+
+**Use case**: snippet #31 의 강화 버전 — `gsap.ticker.lagSmoothing(0)` 추가로 frame skip 시 보간 비활성화. cinematic 에서는 lag smoothing 이 motion drift 유발.
+
+```tsx
+"use client";
+
+import { useEffect } from "react";
+import Lenis from "lenis";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+export function LenisGSAPTicker() {
+  useEffect(() => {
+    // Mobile / reduced-motion 에서 disable (touch hijacking + a11y)
+    if (window.matchMedia("(max-width: 768px)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      autoRaf: false,  // GSAP ticker 가 raf 담당 — autoRaf false 의무
+    });
+
+    // Lenis scroll → ScrollTrigger.update
+    lenis.on("scroll", ScrollTrigger.update);
+
+    // GSAP ticker → Lenis raf
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+
+    // lagSmoothing 0 — frame skip 시 보간 X (cinematic accuracy)
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+      gsap.ticker.lagSmoothing(500, 33);  // restore default
+    };
+  }, []);
+
+  return null;
+}
+```
+
+**Use case difference** vs snippet #31: snippet #31 은 default lagSmoothing. 본 #37 는 cinematic-immersion-auto / editorial slow horizontal 처럼 scrub 정확도 중요한 cluster 한정.
+
+---
+
+## Snippet 38 — Barba.js + clip-path page transition
+
+<!-- motion-snippet: name=barba-clippath-transition stack=barba -->
+
+**출처**: R—K '26 portfolio (Codrops 2026-04 case study).
+
+**Use case**: brutalist-architecture / editorial-slow — 페이지 전환이 brand identity. clip-path wipe 으로 hard-edge transition.
+
+```tsx
+// app/layout.tsx 또는 _app.tsx
+"use client";
+
+import { useEffect } from "react";
+import barba from "@barba/core";
+import { gsap } from "gsap";
+
+export function BarbaProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    barba.init({
+      transitions: [
+        {
+          name: "clip-wipe",
+          leave({ current }) {
+            return gsap.to(current.container, {
+              duration: 0.6,
+              clipPath: "inset(0 0 100% 0)",   // bottom-to-top wipe out
+              ease: "expo.inOut",
+            });
+          },
+          enter({ next }) {
+            // 새 페이지는 hidden 상태로 들어옴 — wipe in
+            gsap.set(next.container, { clipPath: "inset(100% 0 0 0)" });
+            return gsap.to(next.container, {
+              duration: 0.6,
+              clipPath: "inset(0 0 0 0)",
+              ease: "expo.inOut",
+            });
+          },
+        },
+      ],
+    });
+
+    return () => barba.destroy();
+  }, []);
+
+  return <>{children}</>;
+}
+```
+
+**중요**: Barba.js 는 Next.js App Router 와 충돌 가능 — `next/link` 의 default prefetch + soft navigation 과 race. brutalist-architecture 처럼 traditional MPA 톤에서 적용 우선. SPA 톤은 snippet #42-#44 View Transitions API 권장.
+
+---
+
+## Snippet 39 — Flip cross-page shared element transition
+
+<!-- motion-snippet: name=flip-cross-page stack=gsap -->
+
+**출처**: Better Off Lookback project (Codrops 2026 case study).
+
+**Use case**: 작품 리스트 → detail 이동 시 thumbnail 이 hero 로 morph. agency-portfolio / editorial 톤. Next.js App Router + parallel routes 와 결합.
+
+```tsx
+"use client";
+
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+import { Flip } from "gsap/Flip";
+import { useRouter } from "next/navigation";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(Flip);
+}
+
+export function ProjectThumbnail({ id, src, alt }: { id: string; src: string; alt: string }) {
+  const router = useRouter();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+
+    // 1. Capture current Flip state
+    const state = Flip.getState(`[data-flip-id="${id}"]`);
+
+    // 2. Add temporary class for cross-page persistence
+    const el = document.querySelector<HTMLElement>(`[data-flip-id="${id}"]`);
+    if (el) el.classList.add("flip-transitioning");
+
+    // 3. Navigate (Next.js soft nav)
+    router.push(`/projects/${id}`);
+
+    // 4. 새 페이지 마운트 후 Flip.from 으로 reposition (useGSAP 또는 useEffect 안에서)
+    requestAnimationFrame(() => {
+      Flip.from(state, {
+        duration: 0.8,
+        ease: "expo.inOut",
+        absolute: true,
+        targets: `[data-flip-id="${id}"]`,
+      });
+    });
+  };
+
+  return (
+    <a href={`/projects/${id}`} onClick={handleClick}>
+      <img data-flip-id={id} src={src} alt={alt} />
+    </a>
+  );
+}
+```
+
+**Use case**: 동일 `data-flip-id` 가 list page 와 detail page 양쪽에 존재해야 — shared element identity 핵심. View Transitions API 의 `view-transition-name` 과 호환 (snippet #42-#43 참고).
+
+---
+
+## Snippet 40 — easeReverse for menu / drawer interruptible toggle
+
+<!-- motion-snippet: name=ease-reverse-toggle stack=gsap -->
+
+**출처**: GSAP 3.15 release note + Codrops 2026-04-22 "A Playful Clip Menu with GSAP's easeReverse".
+
+**Use case**: nav menu open/close, drawer, accordion — 사용자가 mid-animation 에 reverse 클릭 해도 자연스럽게 되돌아가는 패턴. 기존 `tl.reverse()` 는 ease 가 mirror 안 되어 어색.
+
+```tsx
+"use client";
+
+import { useRef, useState } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap } from "gsap";
+
+export function ClipMenu() {
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useGSAP(() => {
+    // ease + easeReverse 둘 다 명시 — reverse 시 다른 ease 적용
+    const tl = gsap.timeline({ paused: true });
+    tl.to(".clip-menu", {
+      clipPath: "inset(0 0 0 0)",
+      duration: 0.6,
+      ease: "expo.out",
+      easeReverse: "expo.in",  // GSAP 3.15+ — reverse direction 의 ease
+    });
+    tl.from(
+      ".menu-item",
+      {
+        y: 20,
+        opacity: 0,
+        stagger: 0.05,
+        duration: 0.4,
+        ease: "power2.out",
+        easeReverse: "power2.in",
+      },
+      "-=0.2"
+    );
+    tlRef.current = tl;
+  }, []);
+
+  const toggle = () => {
+    if (!tlRef.current) return;
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) tlRef.current!.play();
+      else tlRef.current!.reverse();
+      return next;
+    });
+  };
+
+  return (
+    <>
+      <button onClick={toggle} aria-expanded={isOpen}>
+        {isOpen ? "Close" : "Menu"}
+      </button>
+      <div className="clip-menu" style={{ clipPath: "inset(100% 0 0 0)" }}>
+        {/* menu items */}
+      </div>
+    </>
+  );
+}
+```
+
+**중요**: `easeReverse` 는 GSAP 3.15+ (2026 release). 그 이전 버전은 `reversed: false` + 별도 timeline pair 패턴 필요.
+
+---
+
+## v1.9.6 cluster matrix 업데이트
+
+| Cluster | 신규 추가 권장 snippet |
+|---|---|
+| A Brutalist agency | #36 matchMedia + #38 Barba transition |
+| B Cinematic immersion auto | #35 GSAP→WebGL bridge + #37 Lenis ticker v2 |
+| C Interactive playground (DSP 신규 필요) | #36 + #40 easeReverse + #26 Draggable |
+| D Editorial horizontal (DSP 신규 필요) | #34 ScrollTo + #38 Barba + #39 Flip |
+| E AI Observability SaaS (DSP 신규 필요) | #33 MorphSVG→DrawSVG + #36 + #39 Flip |
+| F Playful illustrated (DSP 신규 필요) | #27 elastic CTA + #40 easeReverse |
+| G ASCII typography only | #36 (모든 cluster 공통) |
+

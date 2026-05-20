@@ -280,9 +280,41 @@ grep -nE "gsap\.(to|fromTo)\([^)]*rotation" <project>/app -A 5 | grep -B 5 "rota
 
 ---
 
-## Category E — prefers-reduced-motion full audit
+## Category E — Reduced motion as parallel design (v1.9.6 rename)
 
-### Trap
+> **v1.9.6 paradigm shift**: reduced-motion 은 "motion 끔" (disable flag) 이 아니라 **"동등한 정보 전달 + 다른 visual layer"** (parallel design) — Cassie Evans (GSAP team) via Thibault Guignand (Codrops 2026-05-06) verbatim:
+> "When you turn motion off, the design must still communicate everything the motion communicated. Color, typography, layout, and copy must do the heavy lifting."
+>
+> 즉, motion 이 brand identity 전달의 핵심이라면 reduced-motion 버전도 색·타이포·레이아웃 만 으로 같은 메시지 전달 가능해야. 단순 `if (reduce) return;` 으로 hero 가 invisible 되는 패턴 = fail.
+
+### E1 — `gsap.matchMedia()` wrapping 의무 (v1.9.6 신규)
+
+snippet #36 `matchMedia-reduced-motion` verbatim 적용 — 단순 useReducedMotion 분기 보다 강력:
+- viewport / preference 변경 시 자동 cleanup + rebuild
+- 동일 timeline 의 두 variant (full / reduced) 동시 정의
+- React 와 무관하게 GSAP 차원에서 lifecycle 관리
+
+### E2 — WCAG 2.2.2 in-page toggle (auto-play 5초+ 시 의무)
+
+브라우저 preference 가 default, 단 in-page toggle 도 제공 의무:
+- 5초 이상 auto-play 또는 loop 하는 motion (Lenis smooth scroll / Ken Burns / particle / autoplay video) 은 사용자가 페이지 내에서 stop 가능해야 함
+- Top-right corner 의 단순 button `[ pause motion ]` 또는 ESC keystroke 지원
+- system preference + in-page toggle = OR (둘 중 하나라도 reduce 면 reduced variant)
+
+### E3 — `aria-live="polite"` on SplitText reveal
+
+SplitText 가 chars 단위 reveal 시 screen reader 가 글자 단위 announce — accessibility 무너짐:
+- SplitText container 에 `aria-live="off"` + `aria-label="<원본 텍스트>"` 의무
+- Original headline text 는 hidden `<span>` 으로 보존, visually 보이는 chars 는 `aria-hidden="true"`
+- Reveal 완료 후 `aria-live="polite"` 로 전환 가능 (선택)
+
+### E4 — Focus visible dark/light variant
+
+`prefers-color-scheme: dark` + `prefers-reduced-motion: reduce` 조합 시 focus ring 가독성 검증:
+- focus ring 이 background 와 contrast WCAG 4.5:1 자동 충족하도록 dark/light variant 분리 정의
+- `outline: 2px solid color-mix(in srgb, var(--brand-accent), white 30%)` 같은 adaptive 사용
+
+### Trap (기존 v1.7.0)
 
 motion 강제 종료 메커니즘이 JS gate (Framer `useReducedMotion()` / `window.matchMedia`) 만 박혀있고 CSS `@media (prefers-reduced-motion: reduce)` 빠지면 — 또는 그 반대 — accessibility 검수 실패 + 일부 motion 이 stop 안 됨.
 
@@ -595,6 +627,130 @@ grep -c "new SplitText\|SplitText.create" <project>/app/<route>/*.tsx
 ```tsx
 // ❌ Bad
 <video src="hero.mp4" autoPlay />  // unmuted, no controls
+```
+
+---
+
+### G.8 Mobile parallax / pin (v1.9.6 신규)
+
+**Trap**: 데스크톱에서 잘 작동하는 `ScrollTrigger pin + scrub` 또는 `parallax` 를 mobile (≤ 768px) 에 그대로 적용.
+
+**Production reality** (Web.dev mobile UX 2026 + UXPin):
+- iOS Safari 의 `scroll-behavior: smooth` 와 ScrollTrigger pin 충돌 — janky scroll
+- 모바일 viewport 가 100dvh 인데 pin spacing 이 100vh 로 계산되면 address bar 크기만큼 mismatch
+- Touch scroll 의 native momentum 이 GSAP scrub 와 race → motion drift
+- 모바일 사용자는 horizontal carousel 도 swipe 로 인식 안 함
+
+**MUST USE**:
+- `gsap.matchMedia()` 안에서 `(min-width: 769px)` branch 에만 pin / parallax / horizontal scroll 활성화
+- Mobile branch 는 단순 vertical scroll + 짧은 fade reveal 만
+- `100dvh` 사용 (100vh 대신) for pin spacing on mobile
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — pin + scrub everywhere
+gsap.timeline({
+  scrollTrigger: { trigger: ".hero", pin: true, scrub: 1, start: "top top" }
+});
+
+// ✅ Good — matchMedia branching
+gsap.matchMedia().add("(min-width: 769px)", () => {
+  // pin + scrub only on desktop
+}).add("(max-width: 768px)", () => {
+  // simple fade only
+});
+```
+
+**Grep audit**:
+```bash
+# Pin/scrub 사용한 파일에서 matchMedia branch 누락 검출
+grep -lE "pin:\s*true|scrub:" <project>/app | while read f; do
+  if ! grep -q "matchMedia.*min-width\|matchMedia.*max-width" "$f"; then
+    echo "POTENTIAL G.8: $f has pin/scrub WITHOUT matchMedia mobile branch"
+  fi
+done
+```
+
+---
+
+### G.9 Cursor effects without `hover:hover` gate (v1.9.6 신규)
+
+**Trap**: Custom cursor / magnetic CTA / trail cursor 를 mobile · touch 디바이스에 그대로 적용.
+
+**Production reality**:
+- Mobile 에 cursor 자체 없음 — magnetic CTA 가 touch 와 충돌 → CTA 가 사용자 손가락 따라 미세하게 움직임 → 의도된 motion 아닌 글리치
+- `@media (hover: hover) and (pointer: fine)` 가 native CSS gate — JS 로도 동일 매칭 필요
+
+**MUST USE**:
+- 모든 cursor-related JS effect 를 `window.matchMedia("(hover: hover) and (pointer: fine)").matches` 로 gate
+- Custom cursor `<div>` 자체를 `@media (hover: hover) and (pointer: fine)` 에서만 render
+- Magnetic CTA 의 mouse position handler 도 동일 gate
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — magnetic CTA 가 mobile 에서도 작동
+<motion.button onMouseMove={handleMagnetic}>...</motion.button>
+
+// ✅ Good — hover:hover gate
+const canHover = useMemo(() =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches,
+  []
+);
+<motion.button onMouseMove={canHover ? handleMagnetic : undefined}>...</motion.button>
+```
+
+**Grep audit**:
+```bash
+# Cursor / magnetic / trail 사용 검출 후 hover:hover gate 확인
+grep -rE "magnetic|trail-cursor|onMouseMove" <project>/app | grep -v "node_modules" | while read line; do
+  file=$(echo "$line" | cut -d: -f1)
+  if ! grep -q "(hover: hover)" "$file"; then
+    echo "POTENTIAL G.9: $file uses cursor effect WITHOUT hover:hover gate"
+  fi
+done
+```
+
+---
+
+### G.10 Audio autoplay with sound (v1.9.6 신규 — strict reinforcement of G.7)
+
+**Trap**: Hero 의 video / 3D scene 이 mount 시 즉시 audio 재생.
+
+**Production reality**:
+- Chrome / Safari / Firefox 모두 autoplay policy: muted only on initial mount (user gesture 필요)
+- Audio context API 도 동일 — user gesture 없이 resume 시 silent fail
+- Battery drain / data usage / public space 에서 사용자 embarrassment
+
+**MUST USE**:
+- 모든 `<video>` 에 `muted + playsinline + loop` 의무
+- Audio 활성화는 explicit user gesture (play button click) 후 만
+- 사용자에게 `Audio: off` toggle visible (top-right corner pill 등)
+- `prefers-reduced-motion: reduce` 일 때 video 도 정지
+
+**MUST NOT**:
+```tsx
+// ❌ Bad — unmuted autoplay
+<video src="hero.mp4" autoPlay loop />
+
+// ❌ Bad — AudioContext().resume() without user gesture
+useEffect(() => {
+  const ctx = new AudioContext();
+  ctx.resume();  // silent fail on Chrome 100+
+}, []);
+
+// ✅ Good — muted autoplay + user-gesture audio
+<video src="hero.mp4" autoPlay loop muted playsInline />
+
+const enableAudio = () => {
+  audioRef.current?.play();  // inside onClick handler — gesture context
+};
+```
+
+**Grep audit**:
+```bash
+# autoPlay 사용 검출, muted 동반 안 됨 시 fail
+grep -rnE "autoPlay" <project>/app | grep -v "muted" | head -10
 ```
 
 ---

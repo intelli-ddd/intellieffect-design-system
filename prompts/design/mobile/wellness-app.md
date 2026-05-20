@@ -177,3 +177,29 @@ platform: mobile
 - 카피가 명령형이 아니라 초대형인가 ("Start now" 보다 "When you're ready")
 - Heading serif가 emotional weight를 전달하는가, 또는 sans-only로 cold한가
 - 한국어 사용 시 Pretendard + serif 강조 페어가 깨끗하게 렌더되는가
+
+
+---
+
+## v1.9.6 — Mobile accessibility tokens (cross-cutting)
+
+```
+touch_target_min: 44px (iOS HIG / WCAG 2.5.5 AAA)
+touch_target_spacing: 8px between adjacent targets
+bottom_tab_bar_height: 56-64px (4-5 items max)
+hamburger_drawer_width: 80vw (full-screen overlay 권장)
+safe_area_inset: env(safe-area-inset-*) 적용 의무
+```
+
+**규칙**:
+- 모든 interactive element (button / link / chip / icon-button) 의 hit area ≥ 44×44px
+- icon 자체는 작게 (24-28px) 두되 padding 으로 44×44 확보
+- bottom tab bar 4-5 items 만 (UXPin / CreatorConcepts 2026 verbatim — 4 items sweet spot)
+- iPhone notch / Dynamic Island / Android navigation bar 회피 — `env(safe-area-inset-top/bottom)` CSS 의무
+- Snippet #47 `gsap.matchMedia() mobile breakpoint motion override` 적용 — desktop motion 의 mobile 변형 분기 필수
+
+**MUST NOT**:
+- iOS native scroll 의 `scroll-behavior: smooth` + Lenis 동시 적용 (충돌)
+- bottom tab bar 6+ items (cognitive overload + 44px breach)
+- ScrollTrigger pin 을 mobile 에 그대로 (Category G.8 fail)
+- Custom cursor / magnetic CTA 를 mobile 에 (Category G.9 fail)
