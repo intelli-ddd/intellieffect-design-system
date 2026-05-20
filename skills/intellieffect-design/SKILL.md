@@ -366,6 +366,80 @@ Task tool
 
 Designer agent는 `~/.claude/agents/designer.md` 에 정의됨 (본 repo install.sh 또는 plugin install이 ~/.claude/agents/ 로 symlink).
 
+## Section 8 — Implementation Guardrails (5 카테고리 trap)
+
+DSP 의 abstract tone 룰 (색·폰트·radius·motion 라이브러리) 만으로 prevent 안 되는 **구현 레벨 code trap** 5 카테고리. designer agent 가 pre-commit 시점에 반드시 grep audit.
+
+**Source of truth**: `~/.claude/prompts/design/_guardrails.md` (verbatim 코드 예시 + grep audit 명령 카탈로그). 본 섹션은 요약 + 인덱스.
+
+### Category A — Text overflow (italic + SplitText)
+
+- Trap: SplitText word wrapper `.word-wrap { overflow: hidden }` 가 italic / weight≥700 / tight tracking 글립의 우측 클리핑
+- MUST USE: `clip-path: inset(-0.15em -0.4em 0 -0.4em)` + italic span 에 `padding-right: 0.06em`
+- MUST NOT: `overflow: hidden` on SplitText word wrappers with italic/heavy content
+- Audit: `grep -rnE "\.(word|char|line)-wrap[^{]*\{[^}]*overflow:\s*hidden"`
+
+### Category B — useGSAP scope rules
+
+- Trap: `useGSAP({ scope: ref })` 안 string CSS selector 는 scope descendant 만 매치 → 외부 element silent fail
+- MUST USE: 외부 element 는 `document.querySelector` 로 ref 받아 직접 전달
+- MUST NOT: 외부 element 를 string selector 로 `gsap.to / ScrollTrigger.batch / gsap.utils.toArray` 전달
+- Audit: `useGSAP scope` 있는 파일에서 `gsap.to("#...")` 패턴 grep
+
+### Category C — Motion stacking conflicts
+
+- Trap: 같은 wrapper 에 anime.js infinite loop + GSAP scroll-tied rotation stack → 라벨 누움 + drift
+- MUST USE: 한 element 당 한 transform-source, 또는 label 을 non-rotating sibling 으로 분리, 또는 counter-rotation
+- MUST NOT: `<div ref={animeTarget}><svg/><span>LABEL</span></div>` + 같은 ref 에 GSAP rotation
+- Audit: `svg.morphTo / createTimeline` 있는 파일에 `gsap.*rotation` 동시 등장 grep
+
+### Category D — Decorative absolute positioning
+
+- Trap: `position: absolute` + GSAP rotation 시 transform-origin default (center) → scale 동반 drift
+- MUST USE: `transformOrigin: "50% 50%"` 명시. 위치는 CSS top/right, transform 은 GSAP — 책임 분리
+- MUST NOT: GSAP transform 으로 x/y 위치까지 잡기
+- Audit: `gsap.*rotation` 라인 ±5 줄 내 `transformOrigin` 누락 검출
+
+### Category E — prefers-reduced-motion full audit
+
+- Trap: JS gate (`useReducedMotion()`) 만 박고 CSS `@media (prefers-reduced-motion: reduce)` 누락 (또는 반대)
+- MUST USE: 두 layer 모두 작성 — JS 로 timeline init skip + CSS 로 모든 transition/animation 0.01ms clamp
+- MUST NOT: 한쪽만 박기
+- Audit: `useReducedMotion` 있는 파일에 `prefers-reduced-motion` 누락 검출
+
+### Pre-commit audit checklist
+
+designer agent 가 코드 생성 완료 후 다음 5 명령 모두 실행, 결과를 리포트에 verbatim 박는다:
+
+```bash
+# A. Text overflow
+grep -rnE "\.(word|char|line)-wrap[^{]*\{[^}]*overflow:\s*hidden" <project>/app <project>/components
+
+# B. useGSAP scope (수동 확인 필요)
+grep -lE "useGSAP\([^,]+,\s*\{\s*scope:" <project>/app | while read f; do
+  echo "=== $f ==="
+  grep -nE "gsap\.(to|from|fromTo|set)\(\"[#.]|ScrollTrigger\.batch\(\"[#.]" "$f"
+done
+
+# C. Motion stacking
+grep -lE "svg\.morphTo|createTimeline" <project>/app | while read f; do
+  if grep -qE "gsap\.(to|from|fromTo).*rotation" "$f"; then
+    echo "POTENTIAL STACK CONFLICT: $f"
+    grep -nE "svg\.morphTo|gsap\.(to|fromTo).*rotation" "$f"
+  fi
+done
+
+# D. transformOrigin 누락
+grep -rnE "gsap\.(to|fromTo)\([^)]*rotation" <project>/app -A 5 | grep -B 1 "rotation" | grep -v "transformOrigin" | grep "rotation"
+
+# E. reduced-motion 한쪽 누락
+grep -lE "useReducedMotion\(\)" <project>/app | xargs grep -L "prefers-reduced-motion"
+```
+
+0 매치 또는 모두 의도된 예외 (inline 주석으로 사유 명시) 가 있어야 작업 완료. 매치 있고 사유 없으면 fix 또는 surface as Open question.
+
+---
+
 ## Anti-pattern (이 skill 호출 후 발생 시 failure)
 
 - DSP token 변경 ("좀 더 밝게", "round 더 크게" 같은 자체 판단)

@@ -38,6 +38,33 @@ These hold regardless of what the DSP says. The DSP can only **tighten** them, n
 - **No nested cards** (border+shadow inside border+shadow).
 - **Animation duration ≤ 300ms** for interactive UI (button hover, dropdown). Marketing hero scroll-reveal may run longer if DSP allows it; in either case, `transform`/`opacity` only — never `filter: blur` animation.
 
+## Pre-commit audit (MANDATORY before "Done")
+
+코드 생성 완료 후 다음 5 grep audit 모두 실행. 결과를 리포트 "Pre-commit audit" 섹션에 verbatim 박는다. 매치 있으면 fix 또는 명시적 사유 보고 (inline 주석으로 코드에 사유 명시).
+
+`~/.claude/prompts/design/_guardrails.md` 의 5 카테고리:
+
+| Category | 검출 명령 |
+|---|---|
+| A. Text overflow (italic + SplitText) | `grep -rnE "\.(word\|char\|line)-wrap[^{]*\{[^}]*overflow:\s*hidden" <project>/app <project>/components` |
+| B. useGSAP scope | useGSAP scope 있는 파일 색출 후 string CSS selector 검출 — `_guardrails.md` Category B audit 명령 |
+| C. Motion stacking (anime.js + GSAP rotation) | `_guardrails.md` Category C audit 명령 — 공존 시 stack 위치 수동 검증 |
+| D. transformOrigin 누락 | `grep -rnE "gsap\.(to\|fromTo)\([^)]*rotation" <project>/app -A 5` 후 ±5 줄 내 `transformOrigin` 확인 |
+| E. prefers-reduced-motion 한쪽 누락 | `grep -lE "useReducedMotion\(\)" <project>/app \| xargs grep -L "prefers-reduced-motion"` |
+
+작업 완료 보고 시 다음 형식:
+
+```
+### Pre-commit audit (5 categories)
+- A. Text overflow: <0 매치 또는 verbatim 매치 list + 사유>
+- B. useGSAP scope: <외부 element selector 사용 시 document.querySelector 적용 확인>
+- C. Motion stacking: <공존 시 분리/sibling/counter-rotation 적용 확인>
+- D. transformOrigin: <모든 rotation 에 명시 확인>
+- E. Reduced motion: <JS + CSS gate 양쪽 확인>
+```
+
+5 카테고리 중 하나라도 매치 + 사유 없음 → 작업 미완료. fix 후 재실행.
+
 ## Iteration loop (MANDATORY for renderable components)
 
 After writing the initial code, you MUST:

@@ -157,3 +157,29 @@ GSAP showcase 11선 — 본 DSP frontmatter `reference` 필드에 verbatim listi
 - **DAVINCII** `https://davincii.com/` — Option B brutalist dark variant, coral accent, CustomEase signature curve, ScrollTo navigation.
 - **ADA** `https://thefirstthelast.agency/` — Flip layout transition project grid → detail morph, SplitText agency name.
 - **Pacôme Pertant** `http://pacomepertant.com/` — Option D scroll-driven case study, SplitText byline, hairline divider transitions.
+
+## 6. 구현 Guardrails (MUST READ)
+
+본 DSP 적용 시 상위 `prompts/design/_guardrails.md` 의 5 카테고리 (Text overflow / useGSAP scope / Motion stacking / Absolute positioning / Reduced motion) 모두 적용 의무. designer agent 는 pre-commit grep audit 실행 후 결과 리포트에 verbatim 박을 것.
+
+본 DSP 특이 trap (agency-portfolio 톤이 motion-maximalist 라 특히 발화):
+
+### 6.1 SplitText + italic + heavy display
+
+본 DSP 가 italic axis 활용 + display weight 700+ + letter-spacing -0.06em 권장 — Category A trap 직격타. `.word-wrap { overflow: hidden }` 자동 NG. 반드시 `clip-path: inset(-0.15em -0.4em 0 -0.4em)` + italic span 에 `padding-right: 0.06em`.
+
+### 6.2 GSAP ScrollTrigger pinned hero + 외부 progress bar
+
+GSAP showcase reference 중 다수 (Luke Baffait / Studio375 / DAVINCII) 가 hero pin + 페이지 상단 progress bar 패턴. progress bar 는 보통 `<header>` sibling 또는 fixed top — hero ref scope 밖. `useGSAP({ scope: heroRef })` 안에서 `gsap.to("#scroll-progress", ...)` 는 silent fail. **반드시** `document.querySelector("#scroll-progress")` 로 ref 받아 전달 (Category B).
+
+### 6.3 anime.js morph + GSAP rotation stacking
+
+본 DSP 가 anime.js v4 SVG path morph + GSAP rotation 두 모션 모두 권장 — Category C trap 정확히 매치. 같은 element 또는 같은 wrapper 에 둘 다 적용 시 라벨 누움 + drift. **반드시** 다음 중 하나:
+
+- anime.js path morph 만 (corner decorative accent — 본 DSP 기본 권장)
+- GSAP rotation 만 (작품 frame / case study cover 처럼 본 element 가 hero 일 때)
+- 두 motion 분리: anime.js 는 inner SVG path attr, GSAP rotation 은 outer wrapper, 라벨은 그 wrapper 의 sibling (Category C 선택 2)
+
+### 6.4 ScrollSmoother 사용 시 mobile gate
+
+본 DSP 가 ScrollSmoother 권장하나 mobile (`matchMedia("(max-width: 768px)")`) 에서 disable 의무 — touch hijacking 차단. 이 룰은 Section 4 에 이미 박혀있으나 Category E (reduced-motion) 와 함께 검수.
