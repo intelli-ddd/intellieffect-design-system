@@ -163,6 +163,199 @@ platform: mobile
 
 ---
 
+## 5. 구현 Guardrails (MUST READ)
+
+상위 `prompts/design/_guardrails.md` 의 7 카테고리 모두 적용. 본 DSP 특이 trap (mobile):
+
+### 5.1 Reanimated 3 + Framer Motion 충돌 회피
+
+React Native 환경 (mobile app native) — Reanimated 3 `useSharedValue` 단독 사용.
+Web view fallback (Next.js mobile viewport demo) — Framer Motion `motion/react` 만.
+두 라이브러리 동시 import 금지 — bundle 폭발 + 충돌.
+
+### 5.2 Mobile viewport demo 시 hover gate (Category G.9)
+
+Demo 가 desktop browser 에서도 보일 경우 — magnetic CTA / hover scale 등 hover 효과 모두 `@media (hover: hover) and (pointer: fine)` gate. Touch device 에서 motion glitch 차단.
+
+### 5.3 Tabular-nums on every changing metric (Section 1 verbatim)
+
+BPM / pace / elapsed time / distance 같은 changing value — 모든 곳 `font-variant-numeric: tabular-nums`. 글자 폭 변동 = 운동 중 toast.
+
+### 5.4 ScrollTrigger pin 금지 (Category G.8)
+
+Mobile 에 ScrollTrigger pin + scrub 적용 시 iOS Safari address bar 가 100dvh 변동에 따라 motion drift. 모바일 app screen 은 native scroll 만.
+
+### 5.5 prefers-reduced-motion + iOS Reduce Motion (Category E)
+
+- JS gate: `useReducedMotion()` from `motion/react`
+- iOS Setting > Accessibility > Reduce Motion 도 동일 media query 트리거 — App 도 정자세 fallback 의무
+- Chart draw-in / metric count-up 모두 즉시 final state 로 표시
+
+## 6. Media Generation Prompts
+
+본 DSP 의 onboarding hero / app screen mockup / activity photo 자리. 공통 style descriptor 는 상위 `_media-prompts.md` 의 **Style A — Cinematic dark + athletic motion** 응용.
+
+```bash
+./scripts/codex-media-gen.sh \
+  --dsp fitness-app \
+  --prompt onboarding-hero \
+  --output ../distinctive-ui-test/public/fitness/onboarding-hero.png \
+  --size 1024x1536
+```
+
+### 6.1 Onboarding hero — motion blur athletic photography
+
+<!-- media-prompt: name=onboarding-hero type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Athletic motion photography, dark cinematic, single subject mid-action. Mood: pre-workout focus, performance-driven, not lifestyle.
+
+Subject: solo runner OR cyclist OR climber captured mid-action against dark cinematic background. Subject silhouetted with motion blur on extremities (legs / arms swinging). Three-quarter or profile view. NO direct camera contact. Wearing performance gear (NO obvious branding visible).
+
+Composition: 4:5 portrait orientation. Subject anchored LEFT THIRD of frame, ample dark void upper-right (for typography overlay zone). Floor / ground plane lower 20%.
+
+Lighting: dramatic side-light or rim-light from camera-right at 30°, deep shadow opposite. Color temperature 3500-4500K. NO sun-flare / golden hour cheating. Studio-controlled or pre-dawn natural.
+
+Color: oklch(0.10 0.012 250) deep cool-tinted background dominant 70%, vibrant green oklch(0.72 0.18 142) accent on subject (gear / shoe / wristband) 5%, warm skin tone 25%. Strictly cinematic dark + single accent.
+
+NO sun-burst overlay. NO gym backdrop with branded equipment. NO motivational copy overlay. NO group / team. Single performance moment, editorial cover quality.
+
+### 6.2 Home feed screen mockup (1:2 portrait — mobile screen ratio)
+
+<!-- media-prompt: name=home-feed-mockup type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Mobile app screen mockup — fitness app home / activity feed. Dark mode UI screenshot style.
+
+Subject: vertical mobile app screen UI mock-up. Top: greeting "Good morning" + weekly summary chip row (4 small horizontal chips with metric values). Middle: 3-4 vertical workout list cards stacked, each card showing: activity icon (run / bike / swim circle), title, date, metric row "10.2 km · 48:13 · 162 bpm" tabular-nums, small line sparkline chart, optional PR badge. Bottom: tab bar with 5 icons (Home filled green / Activity / center FAB green Start / Stats / Profile).
+
+Composition: 1:2.05 portrait mobile screen aspect ratio (iPhone 13/14 size). Status bar top (time, battery icons subtle). Home indicator bottom thin line.
+
+Color: oklch(0.10 0.012 250) dark background dominant, oklch(0.14 0.014 250) elevated card surface, oklch(0.72 0.18 142) vibrant green accent on active tab / numbers / sparkline, oklch(0.65 0.012 250) mid-gray body text, oklch(0.97 0.004 250) near-white headlines.
+
+NO photo backgrounds. NO glassmorphism. NO gradient bg. Pure flat dark UI. NO branding text on icons.
+
+### 6.3 Workout detail screen mockup — giant metric (1:2 portrait)
+
+<!-- media-prompt: name=workout-detail-mockup type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Mobile app screen mockup — workout detail / run summary. Hero metric dominant.
+
+Subject: vertical mobile app screen. Top: header bar with back arrow + "Morning Run" title + share icon. Hero block (full width, ~30% screen height): giant BPM number 162 (96-128px equivalent, SF Pro Display weight 800 white) centered, label "AVG BPM" Mono caps below. Secondary metrics row (3 cells with smaller numbers): "10.2 km / 48:13 / 8'45 PACE". Below: large animated line chart (HR over time, accent green→orange gradient by zone). Below chart: map area dark style. Action buttons row bottom.
+
+Composition: 1:2.05 portrait mobile screen. Status bar top. Home indicator bottom.
+
+Color: oklch(0.10 0.012 250) base dark, oklch(0.72 0.18 142) green accent on chart + main number, oklch(0.68 0.20 25) orange accent on zone 4-5 area, oklch(0.97 0.004 250) numbers, oklch(0.65 0.012 250) labels.
+
+NO photo. NO map streets text readable. Pure data viz mockup.
+
+### 6.4 Live workout screen — single hero (1:2 portrait)
+
+<!-- media-prompt: name=live-workout-mockup type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Mobile app screen during active workout — minimalist single-metric view.
+
+Subject: vertical mobile screen. Single dominant element: ELAPSED TIME 23:47 in monumental display weight 800, 200pt+, dead-center. Below: secondary row "162 BPM · 7'12 PACE · 4.2 km". Top: small pause button (44pt circle). Bottom: large rectangular STOP button accent orange. NO tab bar — workout mode hides navigation.
+
+Composition: 1:2.05 portrait. Centered hero metric occupies upper 60%. Bottom 30% action area.
+
+Color: oklch(0.08 0.010 250) deeper dark (battery / dim), oklch(0.97 0.004 250) huge number near-white, oklch(0.68 0.20 25) orange STOP button, oklch(0.72 0.18 142) green hero metric highlight when in zone.
+
+NO clutter. NO icons row. Workout mode = single intent.
+
+### 6.5 Profile / stats screen — calendar heatmap (1:2 portrait)
+
+<!-- media-prompt: name=profile-stats-mockup type=image preset=cover-portrait provider=gpt-image-1 -->
+
+Style: Mobile app screen — profile / stats with GitHub-style activity heatmap.
+
+Subject: vertical mobile screen. Top: profile avatar (circle 80px) + username + member since date. Middle hero: weekly / monthly toggle pill, then activity calendar heatmap (52 weeks × 7 days, dot intensity oklch(0.72 0.18 142) green). Below: 4 PR cards (5K, 10K, half marathon, marathon) with date stamps. Bottom: tab bar.
+
+Composition: 1:2.05 portrait. Status bar + home indicator.
+
+Color: dark base, green heatmap dots varying intensity (Zone 1 desaturated to Zone 5 saturated), white numbers.
+
+NO photo. NO illustration. Pure data viz dashboard.
+
+### 6.6 Pre-commit audit hook
+
+```bash
+grep -rnE 'unsplash\.com|picsum\.photos|getty' <project>/app
+grep -c "<!-- media-prompt: name=" prompts/design/mobile/fitness-app.md
+# 기대: ≥ 5 (onboarding-hero + 4 screen mockups)
+```
+
+## 7. Motion Choreography (mobile-specific signature)
+
+본 DSP motion 정체성. 다른 cluster (web brutalist / cinematic / kpop) 와 명확히 차별 — mobile-first + performance budget (200-300ms max except hero count-up).
+
+### 🔴 MUST USE — mobile-specific motion snippets
+
+| Snippet | 적용 위치 | 필수도 |
+|---|---|---|
+| #2 GSAP register (Web view fallback) | Web demo 한정 | conditional |
+| #36 `gsap.matchMedia()` reduced-motion | reduced-motion + iOS Reduce Motion gate | **MANDATORY** |
+| #41 Mobile bottom tab bar spring + haptic | bottom tab switch (Reanimated/Framer) | **MANDATORY** |
+| #42 Swipe-to-action card | 운동 card swipe-left → delete/share reveal | **MANDATORY** |
+| #43 Pull-to-refresh custom (HR-style pulse) | feed scroll-top pull → custom HR spinner | **MANDATORY** |
+| #44 Hero metric count-up (tabular-nums) | workout detail 의 BPM/distance count-up 500ms | **MANDATORY** |
+| #45 Chart line draw-in single playback | HR/pace line chart 첫 paint 시 800ms | **MANDATORY** |
+| #46 Bottom sheet spring snap | snap point 25%/50%/90% bottom sheet | **MANDATORY** |
+| #12 prefers-reduced-motion dual gate | JS + CSS 양 layer + iOS Reduce Motion | **MANDATORY** |
+| #32 `gsap.matchMedia` reduced variant | 모든 motion 의 reduced fallback | **MANDATORY** |
+
+### Banned (다른 cluster 시그니처 — mobile 위배)
+
+- ❌ #3 SplitText chars stagger (web cluster A signature, mobile 운동 중 안 읽힘)
+- ❌ #4 ScrollTrigger pin + scrub (Category G.8 — iOS scroll-behavior 충돌)
+- ❌ #8 Magnetic CTA Framer spring (web cluster A — touch device glitch G.9)
+- ❌ #15 Ken Burns slow zoom (web cluster B — mobile 데이터 사용 + 멀미)
+- ❌ #16 Horizontal scroll carousel (web kpop discography — mobile swipe 와 충돌)
+- ❌ #17 3D tilt card hover (web kpop — touch device 무용)
+- ❌ #25 R3F 3D camera (web cluster B — mobile bundle 폭발)
+- ❌ Bouncy spring `damping < 10` overshoot on buttons (운동 중 답답)
+- ❌ filter blur animation (GPU 폭발)
+
+### Mobile motion budget (Section 3 verbatim)
+
+- Tab switch: 200ms `cubic-bezier(0.2, 0, 0, 1)`
+- Card press: 100ms scale 0.98 + opacity 0.9
+- Metric count-up: 500ms ease-out, tabular-nums interpolation
+- Chart line draw-in: 800ms ease-out (first paint only, NO re-animate on scroll)
+- Bottom sheet spring: damping 14, stiffness 200 (snappy athlete-feel)
+- Screen transition: 280ms shared element
+- **300ms 초과 motion 은 hero / chart 한정. UI control 모두 ≤ 300ms.**
+
+### Haptic feedback choreography
+
+- Workout start: `UIImpactFeedbackGenerator.medium` (iOS) / `HapticFeedback.heavy` (Android)
+- Workout stop: medium impact
+- Tab switch: light impact (subtle, 운동 중 noise 안 만들어)
+- PR / milestone: success notification haptic + heavy + medium pair
+- Long-press unit toggle: selection haptic
+
+Web view (Next.js demo) 환경에서는 haptic 없음 — `navigator.vibrate(20)` 정도만 fallback (지원 브라우저 한정).
+
+### Pre-commit audit (designer agent 의무)
+
+```bash
+PROJECT_DIR=<project>/app/<route>
+
+# Mobile motion mandatory
+grep -rE "matchMedia.*pointer:\s*coarse|matchMedia.*max-width" "$PROJECT_DIR"     # mobile branching
+grep -rE "tabular-nums|font-variant-numeric" "$PROJECT_DIR"                       # numeric stability
+grep -rE "useReducedMotion|prefers-reduced-motion" "$PROJECT_DIR"                  # accessibility
+
+# Banned (다른 cluster 시그니처)
+grep -rE "SplitText|new SplitText" "$PROJECT_DIR"                                  # ❌ kinetic typography
+grep -rE "scrub:\s*(true|1)" "$PROJECT_DIR"                                        # ❌ pin+scrub
+grep -rE "useMotionValue.*Magnetic|stiffness:\s*150" "$PROJECT_DIR"                # ❌ magnetic
+grep -rE "useFrame|@react-three" "$PROJECT_DIR"                                    # ❌ R3F
+grep -rE "rotateX.*rotateY|TiltCard" "$PROJECT_DIR"                                # ❌ 3D tilt
+```
+
+매치 결과 fitness-app cluster 정합성 확인. Banned 매치 시 fail → re-generate.
+
+---
+
 ## v1.9.6 — Mobile accessibility tokens (cross-cutting)
 
 ```
