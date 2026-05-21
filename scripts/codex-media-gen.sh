@@ -83,7 +83,7 @@ fi
 # Locate DSP file (web/ or mobile/ bucket)
 # ---------------------------------------------------------------------------
 DSP_FILE=""
-for bucket in web mobile; do
+for bucket in web mobile derived; do
   candidate="$DSP_ROOT/$bucket/${DSP_SLUG}.md"
   if [[ -f "$candidate" ]]; then
     DSP_FILE="$candidate"
