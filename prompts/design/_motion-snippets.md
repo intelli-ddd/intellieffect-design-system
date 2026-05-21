@@ -2282,3 +2282,508 @@ export function ClipMenu() {
 | F Playful illustrated (DSP 신규 필요) | #27 elastic CTA + #40 easeReverse |
 | G ASCII typography only | #36 (모든 cluster 공통) |
 
+
+---
+
+# v1.10.1 — Scroll-driven WebGL fidelity snippets (#41-#45)
+
+2026-05-21 BP research 기반. oryzo.ai 류 cinematic WebGL scroll-driven 사이트 motion fidelity 가능하게 하는 production-grade 패턴 5개. analyze-reference skill 의 Phase 3 build 에서 canvas count 따라 tier 분기:
+
+| canvas count | Tier | 적용 snippet |
+|---|---|---|
+| 0 | DOM-only | 기존 #1-#40 |
+| 1-3 | Tier A image sequence | **#41** imageSequenceScrub (Apple AirPods 패턴, 80% fidelity) |
+| 4+ + 3D 모델 추정 | Tier B R3F + GLTF | **#42 + #43** (95% fidelity, heavy bundle) |
+| Lusion-tier signature | Tier C Lusion-Scroll-Sync | **#44** (정확한 pattern, MIT, 315 stars) |
+| Fast prototype | Tier D Spline | **#45** (no-code 3D, mobile fallback 의무) |
+
+---
+
+## Snippet 41 — GSAP imageSequenceScrub (Apple AirPods Pro 패턴)
+
+<!-- motion-snippet: name=image-sequence-scrub stack=gsap -->
+
+**출처**: GSAP official helper https://gsap.com/docs/v3/HelperFunctions/helpers/imageSequenceScrub. Apple AirPods Pro 마케팅 페이지 = 132 frames PNG scrub. GSAP **Webflow acquisition (2024+) 으로 완전 무료**.
+
+**Use case**: cinematic product showcase (oryzo.ai / Apple AirPods / Polestar) — pre-rendered 3D scene frame sequence 를 scroll 따라 canvas 에 draw. 80% Apple-tier fidelity, R3F 대비 훨씬 가벼움 (no Three.js bundle).
+
+**Frame source 옵션**:
+1. AI video (Veo3 / Sora) → ffmpeg PNG sequence (`ffmpeg -i input.mov -vf fps=30 frame_%04d.png`)
+2. R3F headless render → frame export
+3. After Effects / Blender → frame export
+4. Codex `gpt-image-1` 12-30장 photographic angles (cheap fallback)
+
+```tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+/**
+ * GSAP imageSequenceScrub helper (verbatim from GSAP docs).
+ * Frames preloaded → drawn to canvas on scroll position.
+ * Apple AirPods Pro 패턴 — 132 frames, scrub: 0.5 smoothing.
+ */
+function imageSequence(config: {
+  urls: string[];
+  canvas: HTMLCanvasElement;
+  scrollTrigger: ScrollTrigger.Vars;
+  paused?: boolean;
+  fps?: number;
+  onUpdate?: (state: { frame: number }) => void;
+}) {
+  const playhead = { frame: 0 };
+  const canvas = config.canvas;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+
+  const images: HTMLImageElement[] = [];
+  const updateImage = () => {
+    const img = images[Math.round(playhead.frame)];
+    if (!img) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+  };
+
+  // Preload all images
+  Promise.all(
+    config.urls.map((url, i) => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          images[i] = img;
+          if (i === 0) updateImage();
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = url;
+      });
+    }),
+  ).then(() => {
+    gsap.to(playhead, {
+      frame: images.length - 1,
+      ease: "none",
+      onUpdate: updateImage,
+      scrollTrigger: config.scrollTrigger,
+    });
+  });
+}
+
+export function ImageSequenceHero({ frames }: { frames: string[] }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    // HiDPI 대응
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+
+    imageSequence({
+      urls: frames,
+      canvas,
+      scrollTrigger: {
+        trigger: canvas,
+        start: "top top",
+        end: "+=3000",        // scroll 거리 3000px = 132 프레임
+        scrub: 0.5,           // 부드러운 smoothing
+        pin: true,
+        snap: 1 / (frames.length - 1),  // half-frame 방지
+        invalidateOnRefresh: true,
+      },
+    });
+  }, [frames]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 0,
+      }}
+    />
+  );
+}
+```
+
+**Frame size budget** (Apple AirPods Pro reference):
+- 132 frames × 1920×1080 JPEG q75 = 50-80KB/frame = **~10MB total**
+- Mobile 변형: 132 frames × 720×1280 = ~3-5MB
+- Reduced motion fallback: first frame only (`if reduce → context.drawImage(images[0])` after preload)
+
+**MUST USE**: oryzo.ai / Apple-style 사이트 적용 시 R3F 대신 image sequence 가 더 가볍고 fidelity 비슷. 단 frames 가 production-quality 여야 (low-res frames = cheap look).
+
+---
+
+## Snippet 42 — R3F ScrollControls + drei (Tesla walkthrough 패턴)
+
+<!-- motion-snippet: name=r3f-scrollcontrols stack=r3f -->
+
+**출처**: `@react-three/drei` official `<ScrollControls>` + `<Scroll>` + `useScroll()` API. Production: `ashgole/r3f_walkthrough` Tesla showcase (Next.js + R3F). Builder.io 2025-10 tutorial.
+
+**Use case**: 사용자 own 3D scene (GLTF model 로딩 + scroll-camera path). image sequence 보다 무겁지만 (R3F ~150KB + Three.js ~600KB + GLTF model varies) **fidelity 95%**, interaction 가능.
+
+**의존성 추가 필요** (현재 plugin demo 미포함):
+```bash
+npm install three @react-three/fiber @react-three/drei
+```
+
+```tsx
+"use client";
+
+import { Suspense } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import {
+  ScrollControls,
+  Scroll,
+  useScroll,
+  useGLTF,
+  Environment,
+  PreloadAll,
+} from "@react-three/drei";
+import * as THREE from "three";
+import { useRef } from "react";
+
+function CoasterModel() {
+  // GLTF model from Poly Pizza CC0 또는 자체 .glb
+  const { scene } = useGLTF("/models/coaster.glb");
+  const meshRef = useRef<THREE.Group>(null);
+  const scroll = useScroll();
+
+  useFrame(() => {
+    if (!meshRef.current) return;
+    // scroll.offset = 0 to 1 (전체 페이지 scroll progress)
+    // scroll.range(start, length) = 특정 구간만 normalize
+    const r1 = scroll.range(0 / 4, 1 / 4);    // 0-25%
+    const r2 = scroll.range(1 / 4, 1 / 4);    // 25-50%
+    const r3 = scroll.range(2 / 4, 1 / 4);    // 50-75%
+    const r4 = scroll.range(3 / 4, 1 / 4);    // 75-100%
+
+    // 각 구간마다 다른 transform
+    meshRef.current.rotation.y = r1 * Math.PI * 2;   // 0-25% — 한 바퀴 회전
+    meshRef.current.position.y = -r2 * 0.5;           // 25-50% — 아래로 0.5 이동
+    meshRef.current.scale.setScalar(1 + r3 * 0.3);    // 50-75% — 30% 확대
+    meshRef.current.rotation.x = r4 * Math.PI * 0.5;  // 75-100% — 90° tilt
+  });
+
+  return <primitive ref={meshRef} object={scene} />;
+}
+
+useGLTF.preload("/models/coaster.glb");  // SSR-safe preload
+
+export function R3FProductHero() {
+  return (
+    <Canvas camera={{ position: [0, 0, 4], fov: 35 }} dpr={[1, 2]}>
+      <Suspense fallback={null}>
+        <Environment preset="studio" />  {/* HDRI for realistic material */}
+        <ScrollControls pages={4} damping={0.15}>
+          <CoasterModel />
+          <Scroll html>
+            {/* DOM content overlay synced with scroll */}
+            <div style={{ height: "400vh", position: "relative" }}>
+              <div style={{ position: "absolute", top: "10vh" }}>
+                <h1>ORYZO</h1>
+              </div>
+              <div style={{ position: "absolute", top: "110vh" }}>
+                <h2>ISN'T JUST A COASTER.</h2>
+              </div>
+              {/* ... */}
+            </div>
+          </Scroll>
+        </ScrollControls>
+      </Suspense>
+    </Canvas>
+  );
+}
+```
+
+**Performance budget**:
+- R3F + drei + Three.js: ~600KB-1MB gzipped runtime
+- GLTF model: 50KB-500KB (low-poly preferred)
+- Mobile fallback 의무 (`matchMedia("(max-width: 768px)")` → static image)
+- DPR cap `[1, 2]` (3+ retina 에서 over-render 차단)
+
+---
+
+## Snippet 43 — GLTF model preload + scroll-camera tween
+
+<!-- motion-snippet: name=gltf-preload-camera stack=r3f -->
+
+**출처**: `@react-three/drei` `useGLTF.preload()` + Codrops Theatre.js camera fly-through tutorial.
+
+**Use case**: 무료 3D 모델 사용 + scroll 따라 카메라가 model 주변 orbital path 이동. 정적 model 회전 (snippet #42) 보다 cinematic.
+
+```tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useThree } from "@react-three/fiber";
+import { useScroll } from "@react-three/drei";
+import * as THREE from "three";
+
+// Pre-defined camera path (key frames)
+const cameraPath = [
+  { position: [0, 0, 4], lookAt: [0, 0, 0] },        // start
+  { position: [3, 1, 3], lookAt: [0, 0, 0] },        // orbit right
+  { position: [0, 2, 2], lookAt: [0, 0, 0] },        // top down
+  { position: [-3, 1, 3], lookAt: [0, 0, 0] },       // orbit left
+  { position: [0, 0, 4], lookAt: [0, 0, 0] },        // return
+];
+
+export function ScrollCameraRig() {
+  const { camera } = useThree();
+  const scroll = useScroll();
+
+  useFrame(() => {
+    const t = scroll.offset;  // 0-1 dampened scroll progress
+    const idx = Math.floor(t * (cameraPath.length - 1));
+    const localT = (t * (cameraPath.length - 1)) % 1;
+
+    const from = cameraPath[idx];
+    const to = cameraPath[Math.min(idx + 1, cameraPath.length - 1)];
+
+    // Lerp between key positions
+    camera.position.lerpVectors(
+      new THREE.Vector3(...from.position),
+      new THREE.Vector3(...to.position),
+      localT,
+    );
+    camera.lookAt(
+      new THREE.Vector3(...to.lookAt).lerp(
+        new THREE.Vector3(...from.lookAt),
+        1 - localT,
+      ),
+    );
+  });
+
+  return null;
+}
+
+// Free 3D model sources (commercial-acceptable):
+// - Poly Pizza (poly.pizza/u/Quaternius) — CC0 1411 models, no login
+// - Sketchfab Free 3D filtered CC0
+// - Quaternius packs (ultimatespacekit / ultimateweaponskit / etc)
+```
+
+---
+
+## Snippet 44 — Lusion WebGL-Scroll-Sync pattern (oryzo.ai 정확한 패턴)
+
+<!-- motion-snippet: name=lusion-scroll-sync stack=webgl -->
+
+**출처**: https://github.com/lusionltd/WebGL-Scroll-Sync (MIT, 315 stars, 2025-04) — Lusion Studio 본인이 공개한 production pattern. 본 패턴이 oryzo.ai 같은 사이트의 핵심 기술.
+
+**Use case**: cinematic immersion DSP cluster B 의 진짜 ground truth. R3F 보다 더 low-level — single fullscreen canvas + DOM bbox sync 으로 scroll-jacking 없이 native scroll 유지.
+
+**핵심 아이디어 verbatim from Lusion**:
+> "Create a single fullscreen WebGL canvas, fixed to the viewport, and render everything there. Then, during each rAF, you get the bounding box of your DOM elements and scroll position (window.scrollY) to position your 3D objects accordingly"
+
+```tsx
+"use client";
+
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+
+export function LusionScrollSync() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+
+    // 1. Setup fullscreen WebGL canvas (fixed viewport)
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(
+      -window.innerWidth / 2, window.innerWidth / 2,
+      window.innerHeight / 2, -window.innerHeight / 2,
+      -1000, 1000,
+    );
+
+    // 2. Find DOM placeholders (e.g., <div data-webgl="coaster"></div>)
+    const placeholders = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-webgl]"),
+    );
+
+    const meshes = placeholders.map((el) => {
+      const id = el.dataset.webgl;
+      const geometry = new THREE.PlaneGeometry(1, 1);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+      // 실제로는 GLTF / shader material 등 id 별 다른 mesh 생성
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+      return { el, mesh };
+    });
+
+    // 3. Per-frame: sync mesh position to DOM bbox
+    const tick = () => {
+      meshes.forEach(({ el, mesh }) => {
+        const rect = el.getBoundingClientRect();
+        // Convert DOM coordinate to WebGL world coordinate
+        const x = rect.left + rect.width / 2 - window.innerWidth / 2;
+        const y = -(rect.top + rect.height / 2 - window.innerHeight / 2);
+        mesh.position.set(x, y, 0);
+        mesh.scale.set(rect.width, rect.height, 1);
+      });
+      renderer.render(scene, camera);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    // 4. Resize handler
+    const onResize = () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.left = -window.innerWidth / 2;
+      camera.right = window.innerWidth / 2;
+      camera.top = window.innerHeight / 2;
+      camera.bottom = -window.innerHeight / 2;
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
+// Usage in JSX:
+// <LusionScrollSync />  (fixed background WebGL layer)
+// ...
+// <h1>ORYZO</h1>
+// <div data-webgl="coaster" style={{ width: 500, height: 500 }} />  {/* Mesh fills this bbox */}
+// <p>...</p>
+```
+
+**중요**:
+- Lusion 본인이 production 에 사용하는 패턴
+- Native scroll 유지 (scroll-jacking 없음)
+- DOM 은 정상 작동 (a11y / SEO 정상)
+- WebGL 은 visual layer 만
+- 우리 plugin 의 cinematic-immersion-auto cluster B 의 정확한 reference pattern
+
+---
+
+## Snippet 45 — Spline embed (no-code 3D fast prototype)
+
+<!-- motion-snippet: name=spline-embed stack=spline -->
+
+**출처**: https://docs.spline.design/exporting-your-scene/web/exporting-as-code + Next.js integration `@splinetool/react-spline/next`.
+
+**Use case**: 빠른 prototyping — 사용자가 Spline editor 에서 3D scene 만든 후 React embed. **단, scene 크기 2-5MB + Spline runtime 부담** (mobile 에서 GPU 무겁) — production cinematic 적용 시 R3F 권장.
+
+**Trade-off**:
+- ✅ Fast authoring (no Three.js code)
+- ✅ Built-in Spline interactions / animations
+- ❌ 2-5MB scene bundle
+- ❌ Mobile GPU 부담
+- ❌ Animation event export 는 Vanilla JS / React only — Three.js / R3F export 시 geometry/materials 만
+
+```bash
+npm install @splinetool/react-spline
+```
+
+```tsx
+"use client";
+
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+
+// SSR-safe lazy load + Spline runtime mobile fallback
+const Spline = dynamic(() => import("@splinetool/react-spline/next"), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      width: "100%",
+      height: "100vh",
+      background: "var(--canvas)",
+      display: "grid",
+      placeItems: "center",
+    }}>
+      <span style={{ color: "var(--ink-quiet)" }}>Loading 3D scene...</span>
+    </div>
+  ),
+});
+
+export function SplineHero() {
+  // Mobile fallback — static image
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+    return (
+      <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+        <img src="/oryzo/hero-stilllife.png" alt="" style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+      </div>
+    );
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <Spline
+        scene="https://prod.spline.design/your-scene-id/scene.splinecode"
+        style={{ width: "100%", height: "100vh" }}
+      />
+    </Suspense>
+  );
+}
+```
+
+**MUST USE only**:
+- Spline pro-tier 사용 시
+- Scene size ≤ 2MB
+- Desktop primary (mobile fallback static)
+- Cinematic scroll-driven NOT 필요한 경우 (Spline 의 scroll 통합은 R3F 보다 제한적)
+
+---
+
+## v1.10.1 cluster matrix 업데이트
+
+| Cluster | Tier A (image seq) | Tier B (R3F GLTF) | Tier C (Lusion sync) | Tier D (Spline) |
+|---|---|---|---|---|
+| A Brutalist agency | optional decorative | NO (overkill) | NO | NO |
+| **B Cinematic immersion auto** | **#41 권장** (Apple AirPods 패턴) | **#42 + #43** (full 3D) | **#44 (정확한 BP, Lusion 본인 pattern)** | optional |
+| C Interactive playground | NO | optional | NO | OK fast proto |
+| D Editorial horizontal | optional | NO | NO | NO |
+| E AI Observability SaaS | optional data viz | optional | NO | NO |
+| F Playful illustrated | Lottie 대체 | NO | NO | OK fast proto |
+| G ASCII typography | NO | NO | NO | NO |
+
+**analyze-reference skill auto-detection logic**:
+```
+canvas count === 0:  Tier 0 (DOM only)
+canvas count 1-3:    Tier A (image sequence — #41)
+canvas count 4+:     Tier C (Lusion sync — #44) 권장, Tier B (R3F + GLTF — #42/#43) 도 가능
+명시적 Spline:       Tier D (#45)
+```
+

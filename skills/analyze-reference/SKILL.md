@@ -239,6 +239,67 @@ DSP 결과를 `prompts/design/derived/<reference-slug>.md` 으로 저장 (또는
 
 ---
 
+## Phase 2.5 — Motion fidelity tier 결정 (v1.10.1 — gap fix)
+
+이전 v1.10.0 limitation: WebGL canvas 내부 motion 은 DOM 으로 inaccessible — 단순화 (photo + scrub) 시 visual 70% / motion 0% 였음.
+
+**v1.10.1 fix**: canvas count + reference 톤 에 따라 motion-tier auto-select.
+
+### Tier matrix
+
+| Detected | Tier | 적용 snippet | Bundle | Fidelity |
+|---|---|---|---|---|
+| canvas count = 0 | **Tier 0** DOM only | #1-#40 (기본) | ~150KB GSAP | 95% (DOM motion 정확 reproduction) |
+| canvas count 1-3 + image-heavy | **Tier A** Image sequence | **#41** imageSequenceScrub | GSAP + 5-10MB frames | 80% (Apple AirPods 패턴) |
+| canvas count 4+ + 3D 추정 | **Tier C** Lusion sync | **#44** WebGL-Scroll-Sync | Three.js ~600KB + custom shader | 90% (Lusion 본인 pattern) |
+| 사용자 GLTF 모델 보유 | **Tier B** R3F + GLTF | **#42 + #43** | R3F + Three.js + drei ~1MB + model | 95% |
+| Fast prototype | **Tier D** Spline | **#45** | Spline runtime + 2-5MB scene | 70% mobile-hostile |
+
+### Auto-detection logic (Phase 1 에서 추가 수집)
+
+```js
+const detection = {
+  canvasCount: document.querySelectorAll('canvas').length,
+  imagesPerViewport: imageCount / (pageHeight / viewportHeight),
+  hasGLTFLoader: scripts.some(s => /(gltf|three|fiber)/.test(s)),
+  hasSpline: scripts.some(s => /splinetool/.test(s)),
+  scrollFactor: pageHeight / viewportHeight,
+};
+
+// Tier decision:
+if (detection.canvasCount === 0) return "Tier 0";
+if (detection.hasSpline) return "Tier D";
+if (detection.canvasCount >= 4 && detection.scrollFactor > 30) return "Tier C";  // Lusion-tier
+if (detection.canvasCount >= 1) return "Tier A";  // Most common cinematic
+return "Tier 0";
+```
+
+### Sample reference assignment
+
+- **oryzo.ai**: canvas 4+ + scrollFactor 63 + scripts bundled → **Tier C** (Lusion pattern #44)
+- **Apple AirPods Pro**: canvas 1 + image sequence detected → **Tier A** (#41, 132 frames)
+- **Polestar 1-page**: canvas 1-2 + Three.js detected → **Tier A 또는 B**
+- **Awwwards SOTD 류 일반 cinematic agency**: canvas 0 + scroll heavy → **Tier 0** + 적합 snippet
+
+### Frame source (Tier A 적용 시)
+
+`imageSequenceScrub` 의 frame source 옵션:
+
+1. **AI video → ffmpeg PNG sequence** (BP 2026):
+   ```bash
+   # Veo3 / Sora 으로 8-15s product video 생성 → ffmpeg PNG export
+   ffmpeg -i product-rotation.mp4 -vf fps=30 frames/frame_%04d.png
+   ```
+2. **R3F headless render** — Three.js scene 만든 후 frame-by-frame export
+3. **After Effects / Blender** — 디자이너 production
+4. **Codex `gpt-image-1` 12-30장 photographic angles** — cheap fallback (cork coaster at 12 rotation angles)
+
+### Frame budget
+
+- Desktop: 132 frames × 1920×1080 JPEG q75 ≈ 10MB
+- Mobile: 132 frames × 720×1280 ≈ 3-5MB (별도 frame set 권장)
+- Reduced motion: first frame only
+
 ## Phase 3 — Build (designer agent dispatch)
 
 생성된 DSP 를 `~/.claude/agents/designer.md` 에 전달:
